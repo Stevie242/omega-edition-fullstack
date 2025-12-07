@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified'])
     ->prefix('reader')
     ->as('reader.')
+    ->middleware('role:reader,creator,admin')
     ->group(function (): void {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
