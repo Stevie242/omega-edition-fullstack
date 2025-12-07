@@ -22,4 +22,11 @@ Route::middleware(['auth', 'verified'])
 
         Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics');
         Route::get('payouts', [PayoutsController::class, 'index'])->name('payouts');
+
+        Route::prefix('settings')->as('settings.')->group(function (): void {
+            Route::get('profile', [\App\Http\Controllers\Creator\SettingsController::class, 'profile'])->name('profile');
+            Route::get('appearance', [\App\Http\Controllers\Creator\SettingsController::class, 'appearance'])->name('appearance');
+            Route::get('password', [\App\Http\Controllers\Creator\SettingsController::class, 'password'])->name('password');
+            Route::get('two-factor', [\App\Http\Controllers\Creator\SettingsController::class, 'twoFactor'])->name('two-factor');
+        });
     });
