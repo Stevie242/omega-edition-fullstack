@@ -102,7 +102,7 @@ class SeriesController extends Controller
 
         $series->save();
 
-        return redirect()->route('creator.series.edit', $series->id);
+        return redirect()->route('creator.series.edit', $series->id)->with('success', 'Série créée.');
     }
 
     public function show(string $series): Response
@@ -204,7 +204,7 @@ class SeriesController extends Controller
 
         $serie->save();
 
-        return redirect()->route('creator.series.edit', $serie->id);
+        return redirect()->route('creator.series.edit', $serie->id)->with('success', 'Série mise à jour.');
     }
 
     private function mapSeries(Series $series): array
