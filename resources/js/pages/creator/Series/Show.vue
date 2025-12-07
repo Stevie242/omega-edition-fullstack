@@ -29,6 +29,7 @@ type Chapter = {
     publishedAt?: string;
     pages: number;
     views: string;
+    preview?: string;
 };
 
 const loading = ref(true);
@@ -39,13 +40,13 @@ const currentPage = ref(1);
 const perPage = ref(6);
 
 const chapters = ref<Chapter[]>([
-    { id: 1, title: 'Chapitre 42', number: 42, status: 'scheduled', scheduledFor: '2025-12-15 10:00', pages: 28, views: '12.4K' },
-    { id: 2, title: 'Chapitre 41', number: 41, status: 'published', publishedAt: '2025-12-02', pages: 30, views: '18.1K' },
-    { id: 3, title: 'Chapitre 40', number: 40, status: 'published', publishedAt: '2025-11-25', pages: 26, views: '17.8K' },
-    { id: 4, title: 'Chapitre 39', number: 39, status: 'draft', pages: 24, views: '—' },
-    { id: 5, title: 'Chapitre 38', number: 38, status: 'published', publishedAt: '2025-11-11', pages: 25, views: '16.2K' },
-    { id: 6, title: 'Chapitre 37', number: 37, status: 'published', publishedAt: '2025-11-04', pages: 23, views: '15.9K' },
-    { id: 7, title: 'Chapitre 36', number: 36, status: 'draft', pages: 21, views: '—' },
+    { id: 1, title: 'Chapitre 42', number: 42, status: 'scheduled', scheduledFor: '2025-12-15 10:00', pages: 28, views: '12.4K', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60' },
+    { id: 2, title: 'Chapitre 41', number: 41, status: 'published', publishedAt: '2025-12-02', pages: 30, views: '18.1K', preview: 'https://images.unsplash.com/photo-1504274066651-8d31a536b11a?auto=format&fit=crop&w=600&q=60' },
+    { id: 3, title: 'Chapitre 40', number: 40, status: 'published', publishedAt: '2025-11-25', pages: 26, views: '17.8K', preview: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=60' },
+    { id: 4, title: 'Chapitre 39', number: 39, status: 'draft', pages: 24, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60' },
+    { id: 5, title: 'Chapitre 38', number: 38, status: 'published', publishedAt: '2025-11-11', pages: 25, views: '16.2K', preview: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=60' },
+    { id: 6, title: 'Chapitre 37', number: 37, status: 'published', publishedAt: '2025-11-04', pages: 23, views: '15.9K', preview: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=60' },
+    { id: 7, title: 'Chapitre 36', number: 36, status: 'draft', pages: 21, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60' },
 ]);
 
 const filteredChapters = computed(() => {
@@ -72,6 +73,11 @@ const paginatedChapters = computed(() => {
 onMounted(() => {
     setTimeout(() => (loading.value = false), 500);
 });
+
+const previewStyle = (src?: string) =>
+    src
+        ? { backgroundImage: `url(${src})` }
+        : { backgroundImage: 'linear-gradient(135deg, #1f2937 0%, #0ea5e9 100%)' };
 </script>
 
 <template>
@@ -206,6 +212,10 @@ onMounted(() => {
                                 :key="chapter.id"
                                 class="rounded-xl border bg-card/80 p-4 shadow-sm"
                             >
+                                <div
+                                    class="mb-3 h-24 w-full overflow-hidden rounded-lg bg-cover bg-center"
+                                    :style="previewStyle(chapter.preview)"
+                                ></div>
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <p class="text-xs text-muted-foreground">Chapitre {{ chapter.number }}</p>
@@ -297,6 +307,10 @@ onMounted(() => {
                                             }}
                                         </span>
                                     </div>
+                                    <div
+                                        class="h-16 w-full overflow-hidden rounded-md bg-cover bg-center"
+                                        :style="previewStyle(chapter.preview)"
+                                    ></div>
                                     <p class="text-xs text-muted-foreground">
                                         Pages : {{ chapter.pages }} · Vues : {{ chapter.views }}
                                     </p>
