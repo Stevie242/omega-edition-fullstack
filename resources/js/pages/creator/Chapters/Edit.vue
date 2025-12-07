@@ -1,89 +1,100 @@
 <script setup lang="ts">
 import CreatorLayout from '@/layouts/CreatorLayout.vue';
-import { Link } from '@inertiajs/vue3';
-import { ArrowLeft, CalendarClock, ChevronDown, ChevronUp, GripVertical, Upload, X } from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
-
-const props = defineProps<{
-    chapterId: string;
-}>();
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { ArrowLeft, CalendarClock, ChevronDown, ChevronUp, GripVertical, Loader2, Upload, X } from 'lucide-vue-next';
+import { computed, onUnmounted, reactive, ref, watch } from 'vue';
 
 type PageItem = {
-    id: number;
+    id: string;
     name: string;
     size: string;
-    preview?: string;
+    preview?: string | null;
     file?: File;
     order: number;
+    isNew?: boolean;
 };
 
-const loading = ref(true);
+const props = defineProps<{
+    seriesId: string;
+    chapter: {
+        id: string;
+        title: string;
+        number: number;
+        status: 'draft' | 'scheduled' | 'published';
+        scheduled_for?: string | null;
+        pages: { id: string; order: number; url: string | null; size_kb?: number | null }[];
+    };
+}>();
 
-const form = ref({
-    title: 'Chapitre 42',
-    number: 42,
-    status: 'scheduled',
-    scheduledAt: '2025-12-15T10:00',
-    pages: [
-        {
-            id: 1,
-            name: 'page-1.png',
-            size: '420 KB',
-            preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60',
-            order: 0,
-        },
-        {
-            id: 2,
-            name: 'page-2.png',
-            size: '388 KB',
-            preview: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=60',
-            order: 1,
-        },
-        {
-            id: 3,
-            name: 'page-3.png',
-            size: '401 KB',
-            preview: 'https://images.unsplash.com/photo-1504274066651-8d31a536b11a?auto=format&fit=crop&w=600&q=60',
-            order: 2,
-        },
-    ] as PageItem[],
+type ChapterForm = {
+    title: string;
+    number: string;
+    status: 'draft' | 'scheduled' | 'published';
+    scheduled_for: string;
+    pages: PageItem[];
+};
+
+const form = reactive<ChapterForm>({
+    title: props.chapter.title,
+    number: String(props.chapter.number),
+    status: props.chapter.status,
+    scheduled_for: props.chapter.scheduled_for ?? '',
+    pages: props.chapter.pages.map((p) => ({
+        id: p.id,
+        name: p.url ? p.url.split('/').pop() ?? 'page' : 'page',
+        size: p.size_kb ? `${p.size_kb} KB` : '',
+        preview: p.url,
+        order: p.order,
+        isNew: false,
+    })),
 });
 
-const sortedPages = computed(() =>
-    [...form.value.pages].sort((a, b) => a.order - b.order),
-);
+const processing = ref(false);
+const sortedPages = computed(() => [...form.pages].sort((a, b) => a.order - b.order));
+const dragSourceId = ref<string | null>(null);
+const removedExisting = ref<string[]>([]);
 
-const dragSourceId = ref<number | null>(null);
+const pageProps = usePage();
+const errors = computed<Record<string, string | string[]>>(
+    () => (pageProps.props.errors as Record<string, string | string[]>) ?? {},
+);
+const errorFor = (key: string): string => {
+    const value = errors.value?.[key];
+    if (!value) return '';
+    return Array.isArray(value) ? value.join(' ') : value;
+};
 
 const addFiles = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const files = target.files;
     if (!files) return;
 
-    const startOrder = form.value.pages.length;
+    const startOrder = form.pages.length ? Math.max(...form.pages.map((p) => p.order)) + 1 : 0;
     Array.from(files).forEach((file, idx) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const preview = (e.target?.result as string) ?? undefined;
-            form.value.pages.push({
-                id: Date.now() + idx,
-                name: file.name,
-                size: `${Math.round(file.size / 1024)} KB`,
-                preview,
-                file,
-                order: startOrder + idx,
-            });
-        };
-        reader.readAsDataURL(file);
+        const preview = URL.createObjectURL(file);
+        form.pages.push({
+            id: `${Date.now()}-${idx}`,
+            name: file.name,
+            size: `${Math.round(file.size / 1024)} KB`,
+            preview,
+            file,
+            order: startOrder + idx,
+            isNew: true,
+        });
     });
     target.value = '';
 };
 
-const removePage = (id: number) => {
-    form.value.pages = form.value.pages.filter((p) => p.id !== id);
+const removePage = (id: string) => {
+    const page = form.pages.find((p) => p.id === id);
+    if (page?.preview?.startsWith('blob:')) URL.revokeObjectURL(page.preview);
+    if (!page?.isNew) {
+        removedExisting.value.push(id);
+    }
+    form.pages = form.pages.filter((p) => p.id !== id);
 };
 
-const movePage = (id: number, direction: 'up' | 'down') => {
+const movePage = (id: string, direction: 'up' | 'down') => {
     const pages = sortedPages.value;
     const index = pages.findIndex((p) => p.id === id);
     if (index === -1) return;
@@ -94,15 +105,15 @@ const movePage = (id: number, direction: 'up' | 'down') => {
     const tmp = current.order;
     current.order = target.order;
     target.order = tmp;
-    form.value.pages = [...pages];
+    form.pages = [...pages];
 };
 
-const handleDragStart = (id: number) => {
+const handleDragStart = (id: string) => {
     dragSourceId.value = id;
 };
 
-const handleDrop = (id: number) => {
-    if (dragSourceId.value === null || dragSourceId.value === id) return;
+const handleDrop = (id: string) => {
+    if (!dragSourceId.value || dragSourceId.value === id) return;
     const pages = sortedPages.value;
     const current = pages.find((p) => p.id === dragSourceId.value);
     const target = pages.find((p) => p.id === id);
@@ -110,37 +121,74 @@ const handleDrop = (id: number) => {
     const tmp = current.order;
     current.order = target.order;
     target.order = tmp;
-    form.value.pages = [...pages];
+    form.pages = [...pages];
     dragSourceId.value = null;
 };
 
-const statusOptions = [
-    { value: 'draft', label: 'Brouillon' },
-    { value: 'scheduled', label: 'Programmé' },
-    { value: 'published', label: 'Publié' },
-];
+const submit = () => {
+    const formData = new FormData();
+    formData.append('title', form.title);
+    formData.append('number', form.number);
+    formData.append('status', form.status);
+    if (form.status === 'scheduled' && form.scheduled_for) {
+        formData.append('scheduled_for', form.scheduled_for);
+    }
+    formData.append('_method', 'put');
 
-onMounted(() => {
-    setTimeout(() => (loading.value = false), 500);
+    sortedPages.value.forEach((page, idx) => {
+        if (page.file) {
+            formData.append('pages[]', page.file);
+            formData.append('orders[]', String(page.order ?? idx));
+        } else {
+            formData.append(`existing_orders[${page.id}]`, String(page.order ?? idx));
+        }
+    });
+    removedExisting.value.forEach((id) => formData.append('removed[]', id));
+
+    processing.value = true;
+    router.post(`/creator/chapters/${props.chapter.id}`, formData, {
+        forceFormData: true,
+        preserveScroll: true,
+        onFinish: () => {
+            processing.value = false;
+        },
+    });
+};
+
+watch(
+    () => form.status,
+    (val) => {
+        if (val !== 'scheduled') {
+            form.scheduled_for = '';
+        }
+    },
+);
+
+onUnmounted(() => {
+    form.pages.forEach((p) => {
+        if (p.preview?.startsWith('blob:')) URL.revokeObjectURL(p.preview);
+    });
 });
 </script>
 
 <template>
     <CreatorLayout
         title="Éditer un chapitre"
-        :description="`Chapitre #${props.chapterId} — mise à jour contenu, pages et publication.`"
+        :description="`Chapitre #${chapter.id} — mise à jour contenu, pages et publication.`"
         :breadcrumbs="[
-            { title: 'Chapitres', href: '/creator/series' },
-            { title: `Chapitre #${props.chapterId}` },
+            { title: 'Séries', href: '/creator/series' },
+            { title: seriesId, href: `/creator/series/${seriesId}` },
+            { title: 'Chapitres', href: `/creator/series/${seriesId}/chapters` },
+            { title: `Chapitre #${chapter.id}` },
         ]"
     >
-        <div class="space-y-4">
+        <form class="space-y-4" @submit.prevent="submit">
             <Link
                 class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:border-primary hover:text-primary"
-                href="/creator/series"
+                :href="`/creator/series/${seriesId}/chapters`"
             >
                 <ArrowLeft class="h-4 w-4" />
-                Retour
+                Retour à la liste des chapitres
             </Link>
 
             <div class="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
@@ -155,6 +203,7 @@ onMounted(() => {
                                     type="text"
                                     class="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/20"
                                 />
+                                <p v-if="errorFor('title')" class="text-xs text-destructive">{{ errorFor('title') }}</p>
                             </div>
                             <div class="space-y-2">
                                 <label class="text-sm font-medium">Numéro</label>
@@ -164,6 +213,7 @@ onMounted(() => {
                                     min="1"
                                     class="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/20"
                                 />
+                                <p v-if="errorFor('number')" class="text-xs text-destructive">{{ errorFor('number') }}</p>
                             </div>
                             <div class="space-y-2">
                                 <label class="text-sm font-medium">Statut</label>
@@ -171,21 +221,26 @@ onMounted(() => {
                                     v-model="form.status"
                                     class="w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm transition focus:border-primary focus:outline-none focus:ring focus:ring-primary/20"
                                 >
-                                    <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
-                                        {{ opt.label }}
-                                    </option>
+                                    <option value="draft">Brouillon</option>
+                                    <option value="scheduled">Programmé</option>
+                                    <option value="published">Publié</option>
                                 </select>
+                                <p v-if="errorFor('status')" class="text-xs text-destructive">{{ errorFor('status') }}</p>
                             </div>
                             <div class="space-y-2 md:col-span-2">
                                 <label class="text-sm font-medium">Date/heure de publication (si programmé)</label>
                                 <div class="relative">
                                     <CalendarClock class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <input
-                                        v-model="form.scheduledAt"
+                                        v-model="form.scheduled_for"
                                         type="datetime-local"
-                                        class="w-full rounded-md border bg-background py-2 pl-9 pr-3 text-sm outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/20"
+                                        :disabled="form.status !== 'scheduled'"
+                                        class="w-full rounded-md border bg-background py-2 pl-9 pr-3 text-sm outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
                                     />
                                 </div>
+                                <p v-if="errorFor('scheduled_for')" class="text-xs text-destructive">
+                                    {{ errorFor('scheduled_for') }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -200,22 +255,7 @@ onMounted(() => {
                             </label>
                         </div>
 
-                        <div v-if="loading" class="space-y-3">
-                            <div v-for="n in 3" :key="n" class="flex items-center gap-4 rounded-lg border bg-card/80 p-4 shadow-sm">
-                                <div class="h-28 w-24 animate-pulse rounded-md bg-muted" />
-                                <div class="flex-1 space-y-2">
-                                    <div class="h-4 w-40 animate-pulse rounded bg-muted" />
-                                    <div class="h-3 w-20 animate-pulse rounded bg-muted" />
-                                    <div class="flex gap-2">
-                                        <div class="h-7 w-20 animate-pulse rounded bg-muted" />
-                                        <div class="h-7 w-24 animate-pulse rounded bg-muted" />
-                                    </div>
-                                </div>
-                                <div class="h-7 w-16 animate-pulse rounded bg-muted" />
-                            </div>
-                        </div>
-
-                        <div v-else-if="!sortedPages.length" class="rounded-lg border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
+                        <div v-if="!sortedPages.length" class="rounded-lg border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
                             Aucune page. Ajoute des images pour voir un aperçu et réordonner.
                         </div>
 
@@ -274,6 +314,9 @@ onMounted(() => {
                                 </div>
                             </div>
                         </div>
+                        <p v-if="errorFor('pages') || errorFor('pages.0')" class="text-xs text-destructive">
+                            {{ errorFor('pages') || errorFor('pages.0') }}
+                        </p>
                     </div>
                 </div>
 
@@ -282,27 +325,23 @@ onMounted(() => {
                         <h2 class="text-lg font-semibold">Actions</h2>
                         <div class="flex flex-col gap-3">
                             <button
-                                type="button"
-                                class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90"
+                                type="submit"
+                                class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+                                :disabled="processing"
                             >
-                                Mettre à jour
+                                <Loader2 v-if="processing" class="h-4 w-4 animate-spin" />
+                                <span>{{ processing ? 'Envoi...' : 'Mettre à jour' }}</span>
                             </button>
-                            <button
-                                type="button"
+                            <Link
+                                :href="`/creator/series/${seriesId}/chapters`"
                                 class="inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition hover:border-primary"
                             >
-                                Programmer
-                            </button>
-                            <button
-                                type="button"
-                                class="inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition hover:border-primary"
-                            >
-                                Publier maintenant
-                            </button>
+                                Annuler
+                            </Link>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
     </CreatorLayout>
 </template>
