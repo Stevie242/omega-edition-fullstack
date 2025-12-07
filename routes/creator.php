@@ -25,6 +25,7 @@ Route::middleware(['auth', 'verified'])
 
         Route::prefix('settings')->as('settings.')->group(function (): void {
             Route::get('profile', [\App\Http\Controllers\Creator\SettingsController::class, 'profile'])->name('profile');
+            Route::match(['put', 'post'], 'profile', [\App\Http\Controllers\Creator\SettingsController::class, 'updateProfile'])->name('profile.update');
             Route::get('appearance', [\App\Http\Controllers\Creator\SettingsController::class, 'appearance'])->name('appearance');
             Route::get('password', [\App\Http\Controllers\Creator\SettingsController::class, 'password'])->name('password');
             Route::get('two-factor', [\App\Http\Controllers\Creator\SettingsController::class, 'twoFactor'])->name('two-factor');
