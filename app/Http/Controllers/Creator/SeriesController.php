@@ -239,8 +239,8 @@ class SeriesController extends Controller
             'chapters' => $series->chapters_count ?? 0,
             'views' => $views,
             'nextRelease' => $nextRelease ? (string) $nextRelease : null,
-            'tags' => $series->tags->pluck('name'),
-            'tagIds' => $series->tags->pluck('id'),
+            'tags' => $series->tags->pluck('name')->values(),
+            'tagIds' => $series->tags->pluck('id')->values(),
             'updatedAt' => $series->updated_at?->toDateTimeString(),
         ];
     }

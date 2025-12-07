@@ -1,215 +1,231 @@
 <script setup lang="ts">
 import CreatorLayout from '@/layouts/CreatorLayout.vue';
-import { Link } from '@inertiajs/vue3';
-import { onMounted, ref, computed } from 'vue';
-import {
-    ArrowLeft,
-    BarChart3,
-    CalendarClock,
-    CalendarDays,
-    Clock4,
-    LayoutGrid,
-    List,
-    Play,
-    Plus,
-    Search,
-    UploadCloud,
-} from 'lucide-vue-next';
-
-const props = defineProps<{
-    seriesId: string;
-}>();
+import { Link, router } from '@inertiajs/vue3';
+import { ArrowLeft, LayoutGrid, List, Pencil, Plus, Tag, BookOpen } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
 
 type Chapter = {
-    id: number;
+    id: string;
     title: string;
     number: number;
     status: 'draft' | 'scheduled' | 'published';
-    scheduledFor?: string;
-    publishedAt?: string;
+    scheduledFor?: string | null;
+    publishedAt?: string | null;
     pages: number;
-    views: string;
-    preview?: string;
+    views: number;
+    preview?: string | null;
+};
+
+type Series = {
+    id: string;
+    title: string;
+    type: 'manga' | 'webtoon';
+    status: 'ongoing' | 'hiatus' | 'completed';
+    format: 'oneshot' | 'series' | 'miniseries';
+    frequency: 'weekly' | 'biweekly' | 'monthly' | 'irregular';
+    language?: string;
+    synopsis?: string | null;
+    cover?: string | null;
+    hero?: string | null;
     likes?: number;
     dislikes?: number;
     rating?: number;
+    chapters?: number;
+    views?: number;
+    tags: string[];
+    updatedAt?: string | null;
 };
 
-const loading = ref(true);
+const props = defineProps<{
+    seriesId: string;
+    series: Series;
+    chapters: Chapter[];
+    chaptersMeta: { current_page: number; last_page: number; total: number };
+}>();
+
 const viewMode = ref<'grid' | 'list'>('grid');
-const query = ref('');
-const statusFilter = ref<'all' | Chapter['status']>('all');
-const currentPage = ref(1);
-const perPage = ref(6);
+const loading = ref(false);
 
-const chapters = ref<Chapter[]>([
-    { id: 1, title: 'Chapitre 42', number: 42, status: 'scheduled', scheduledFor: '2025-12-15 10:00', pages: 28, views: '12.4K', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 820, dislikes: 42, rating: 4.6 },
-    { id: 2, title: 'Chapitre 41', number: 41, status: 'published', publishedAt: '2025-12-02', pages: 30, views: '18.1K', preview: 'https://images.unsplash.com/photo-1504274066651-8d31a536b11a?auto=format&fit=crop&w=600&q=60', likes: 1290, dislikes: 64, rating: 4.7 },
-    { id: 3, title: 'Chapitre 40', number: 40, status: 'published', publishedAt: '2025-11-25', pages: 26, views: '17.8K', preview: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=60', likes: 1175, dislikes: 71, rating: 4.6 },
-    { id: 4, title: 'Chapitre 39', number: 39, status: 'draft', pages: 24, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 0, dislikes: 0, rating: 0 },
-    { id: 5, title: 'Chapitre 38', number: 38, status: 'published', publishedAt: '2025-11-11', pages: 25, views: '16.2K', preview: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=60', likes: 980, dislikes: 58, rating: 4.5 },
-    { id: 6, title: 'Chapitre 37', number: 37, status: 'published', publishedAt: '2025-11-04', pages: 23, views: '15.9K', preview: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=60', likes: 910, dislikes: 55, rating: 4.5 },
-    { id: 7, title: 'Chapitre 36', number: 36, status: 'draft', pages: 21, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 0, dislikes: 0, rating: 0 },
-]);
+const statusLabel = (status: Series['status']) =>
+    status === 'ongoing' ? 'En cours' : status === 'hiatus' ? 'Pause' : 'Terminée';
+const typeLabel = (type: Series['type']) => (type === 'manga' ? 'Manga' : 'Webtoon');
+const formatLabel = (format: Series['format']) =>
+    format === 'oneshot' ? 'One-shot' : format === 'miniseries' ? 'Mini-série' : 'Série longue';
+const frequencyLabel = (frequency: Series['frequency']) => {
+    switch (frequency) {
+        case 'weekly':
+            return 'Hebdomadaire';
+        case 'biweekly':
+            return 'Bi-hebdomadaire';
+        case 'monthly':
+            return 'Mensuel';
+        default:
+            return 'Irrégulier';
+    }
+};
 
-const seriesStats = ref({
-    likes: 5400,
-    dislikes: 220,
-    rating: 4.7,
-});
-
-const seriesLikeRatio = computed(() =>
-    seriesStats.value.likes + seriesStats.value.dislikes === 0
-        ? '—'
-        : `${Math.round(
-              (seriesStats.value.likes / (seriesStats.value.likes + seriesStats.value.dislikes)) * 100,
-          )}%`,
-);
-
-const filteredChapters = computed(() => {
-    const q = query.value.trim().toLowerCase();
-    return chapters.value.filter((c) => {
-        const matchQuery =
-            !q ||
-            c.title.toLowerCase().includes(q) ||
-            String(c.number).includes(q);
-        const matchStatus = statusFilter.value === 'all' || c.status === statusFilter.value;
-        return matchQuery && matchStatus;
-    });
-});
-
-const totalPages = computed(() =>
-    Math.max(1, Math.ceil(filteredChapters.value.length / perPage.value)),
-);
-
-const paginatedChapters = computed(() => {
-    const start = (currentPage.value - 1) * perPage.value;
-    return filteredChapters.value.slice(start, start + perPage.value);
-});
-
-onMounted(() => {
-    setTimeout(() => (loading.value = false), 500);
-});
-
-const previewStyle = (src?: string) =>
+const previewStyle = (src?: string | null) =>
     src
         ? { backgroundImage: `url(${src})` }
         : { backgroundImage: 'linear-gradient(135deg, #1f2937 0%, #0ea5e9 100%)' };
+
+const coverStyle = computed(() =>
+    props.series.cover
+        ? { backgroundImage: `linear-gradient(180deg, rgba(0,0,0,.45), rgba(0,0,0,.75)), url(${props.series.cover})` }
+        : { backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,.65), rgba(0,0,0,.85))' },
+);
+
+const goToPage = (page: number) => {
+    if (page < 1 || page > props.chaptersMeta.last_page) return;
+    loading.value = true;
+    router.get(
+        `/creator/series/${props.seriesId}`,
+        { page },
+        {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+            onFinish: () => {
+                loading.value = false;
+            },
+        },
+    );
+};
+
+const statusClass = (status: Chapter['status']) => {
+    if (status === 'published')
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200';
+    if (status === 'scheduled')
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200';
+    return 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200';
+};
 </script>
 
 <template>
     <CreatorLayout
-        title="Détail série"
+        :title="series.title"
         :description="`Vue détaillée de la série #${props.seriesId}`"
         :breadcrumbs="[
             { title: 'Séries', href: '/creator/series' },
-            { title: props.seriesId },
+            { title: series.title },
         ]"
     >
         <div class="space-y-6">
-            <div class="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                <Link
-                    href="/creator/series"
-                    class="inline-flex items-center gap-2 rounded-md border px-3 py-2 hover:border-primary hover:text-primary"
-                >
-                    <ArrowLeft class="h-4 w-4" />
-                    Retour aux séries
-                </Link>
-                <Link
-                    :href="`/creator/series/${props.seriesId}/chapters`"
-                    class="inline-flex items-center gap-2 rounded-md border px-3 py-2 hover:border-primary hover:text-primary"
-                >
-                    Chapitres
-                </Link>
-                <div class="flex items-center gap-2 rounded-md border border-dashed px-3 py-2">
-                    <BarChart3 class="h-4 w-4 text-primary" />
-                    Vue mock : données statiques
+            <div
+                class="overflow-hidden rounded-xl border bg-cover bg-center shadow-sm"
+                :style="coverStyle"
+            >
+                <div class="bg-gradient-to-r from-black/70 to-black/30 p-6 lg:p-8">
+                    <div class="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                        <Link
+                            href="/creator/series"
+                            class="inline-flex items-center gap-2 rounded-md border border-white/20 px-3 py-2 text-white hover:border-primary"
+                        >
+                            <ArrowLeft class="h-4 w-4" />
+                            Retour aux séries
+                        </Link>
+                        <Link
+                            :href="`/creator/series/${props.seriesId}/edit`"
+                            class="inline-flex items-center gap-2 rounded-md border border-white/20 px-3 py-2 text-white hover:border-primary"
+                        >
+                            <Pencil class="h-4 w-4" />
+                            Éditer
+                        </Link>
+                        <Link
+                            :href="`/creator/series/${props.seriesId}/chapters/create`"
+                            class="inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground shadow hover:opacity-90"
+                        >
+                            <Plus class="h-4 w-4" />
+                            Nouveau chapitre
+                        </Link>
+                    </div>
+
+                    <div class="mt-6 grid gap-6 lg:grid-cols-[2fr_1fr]">
+                        <div class="space-y-3 text-white">
+                            <h1 class="text-3xl font-semibold leading-tight">{{ series.title }}</h1>
+                            <p class="max-w-3xl text-sm text-white/80" v-if="series.synopsis">
+                                {{ series.synopsis }}
+                            </p>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <span class="rounded-full bg-white/10 px-2 py-1">{{ typeLabel(series.type) }}</span>
+                                <span class="rounded-full bg-white/10 px-2 py-1">{{ statusLabel(series.status) }}</span>
+                                <span class="rounded-full bg-white/10 px-2 py-1">{{ formatLabel(series.format) }}</span>
+                                <span class="rounded-full bg-white/10 px-2 py-1">{{ frequencyLabel(series.frequency) }}</span>
+                                <span
+                                    v-if="series.language"
+                                    class="rounded-full bg-white/10 px-2 py-1"
+                                >
+                                    Langue : {{ series.language?.toUpperCase() }}
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <span v-for="tag in series.tags" :key="tag" class="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-1">
+                                    <Tag class="h-3 w-3" />
+                                    {{ tag }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-sm text-white/90 sm:grid-cols-3">
+                            <div class="rounded-lg bg-white/10 p-3">
+                                <p class="text-xs text-white/60">Chapitres</p>
+                                <p class="text-xl font-semibold">{{ series.chapters ?? 0 }}</p>
+                            </div>
+                            <div class="rounded-lg bg-white/10 p-3">
+                                <p class="text-xs text-white/60">Vues</p>
+                                <p class="text-xl font-semibold">{{ series.views ?? 0 }}</p>
+                            </div>
+                            <div class="rounded-lg bg-white/10 p-3">
+                                <p class="text-xs text-white/60">Note</p>
+                                <p class="text-xl font-semibold">{{ series.rating ?? '—' }}</p>
+                            </div>
+                            <div class="rounded-lg bg-white/10 p-3">
+                                <p class="text-xs text-white/60">Likes</p>
+                                <p class="text-xl font-semibold">{{ series.likes ?? 0 }}</p>
+                            </div>
+                            <div class="rounded-lg bg-white/10 p-3">
+                                <p class="text-xs text-white/60">Dislikes</p>
+                                <p class="text-xl font-semibold">{{ series.dislikes ?? 0 }}</p>
+                            </div>
+                            <div class="rounded-lg bg-white/10 p-3">
+                                <p class="text-xs text-white/60">Maj</p>
+                                <p class="text-xs">{{ series.updatedAt ?? '—' }}</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+            <div class="grid gap-6 lg:grid-cols-[2fr_1fr]">
                 <div class="space-y-4">
-                    <div class="rounded-xl border bg-card p-6 shadow-sm">
-                        <h2 class="text-lg font-semibold mb-4">Actions rapides</h2>
-                        <div class="flex flex-wrap gap-3">
-                            <Link
-                                :href="`/creator/series/${props.seriesId}/chapters/create`"
-                                class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90"
-                            >
-                                <Plus class="h-4 w-4" />
-                                Créer un chapitre
-                            </Link>
-                            <button
-                                type="button"
-                                class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition hover:border-primary"
-                            >
-                                <UploadCloud class="h-4 w-4" />
-                                Uploader un chapitre (draft)
-                            </button>
-                            <button
-                                type="button"
-                                class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition hover:border-primary"
-                            >
-                                <CalendarClock class="h-4 w-4" />
-                                Programmer publication
-                            </button>
-                            <button
-                                type="button"
-                                class="inline-flex items-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition hover:border-primary"
-                            >
-                                <Play class="h-4 w-4" />
-                                Publier un chapitre
-                            </button>
+                    <div class="flex items-center justify-between gap-3 rounded-xl border bg-card p-4 shadow-sm">
+                        <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                            <BookOpen class="h-4 w-4" />
+                            Chapitres
                         </div>
-                    </div>
-
-                    <div class="rounded-xl border bg-card p-6 shadow-sm space-y-3">
-                        <div class="flex flex-wrap items-center gap-3">
-                            <div class="relative w-full md:w-72">
-                                <span class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                    <Search class="h-4 w-4" />
-                                </span>
-                                <input
-                                    v-model="query"
-                                    type="search"
-                                    placeholder="Rechercher un chapitre..."
-                                    class="w-full rounded-md border bg-background py-2 pl-9 pr-3 text-sm outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/20"
-                                />
-                            </div>
-                            <select
-                                v-model="statusFilter"
-                                class="rounded-md border bg-background px-3 py-2 text-sm text-foreground shadow-sm transition focus:border-primary focus:outline-none focus:ring focus:ring-primary/20"
+                        <div class="hidden items-center gap-2 md:flex">
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition hover:border-primary"
+                                :class="viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'bg-muted/40'"
+                                @click="viewMode = 'grid'"
                             >
-                                <option value="all">Tous</option>
-                                <option value="draft">Brouillon</option>
-                                <option value="scheduled">Programmé</option>
-                                <option value="published">Publié</option>
-                            </select>
-                            <div class="ml-auto hidden items-center gap-2 md:flex">
-                                <button
-                                    type="button"
-                                    class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition hover:border-primary"
-                                    :class="viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'bg-muted/40'"
-                                    @click="viewMode = 'grid'"
-                                >
-                                    <LayoutGrid class="h-4 w-4" />
-                                    Grille
-                                </button>
-                                <button
-                                    type="button"
-                                    class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition hover:border-primary"
-                                    :class="viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-muted/40'"
-                                    @click="viewMode = 'list'"
-                                >
-                                    <List class="h-4 w-4" />
-                                    Liste
-                                </button>
-                            </div>
+                                <LayoutGrid class="h-4 w-4" />
+                                Grille
+                            </button>
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm transition hover:border-primary"
+                                :class="viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'bg-muted/40'"
+                                @click="viewMode = 'list'"
+                            >
+                                <List class="h-4 w-4" />
+                                Liste
+                            </button>
                         </div>
                     </div>
 
                     <div v-if="loading" class="grid gap-4 sm:grid-cols-2">
-                        <div v-for="n in perPage" :key="n" class="rounded-xl border bg-card/80 p-4 shadow-sm">
+                        <div v-for="n in 6" :key="n" class="rounded-xl border bg-card/80 p-4 shadow-sm">
                             <div class="h-20 w-full animate-pulse rounded bg-muted" />
                             <div class="mt-3 space-y-2">
                                 <div class="h-4 w-2/3 animate-pulse rounded bg-muted" />
@@ -223,267 +239,180 @@ const previewStyle = (src?: string) =>
                     </div>
 
                     <template v-else>
-                        <div v-if="viewMode === 'grid'" class="grid gap-4 sm:grid-cols-2">
-                            <div
-                                v-for="chapter in paginatedChapters"
-                                :key="chapter.id"
-                                class="rounded-xl border bg-card/80 p-4 shadow-sm"
-                            >
-                                <div
-                                    class="mb-3 h-24 w-full overflow-hidden rounded-lg bg-cover bg-center"
-                                    :style="previewStyle(chapter.preview)"
-                                ></div>
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-xs text-muted-foreground">Chapitre {{ chapter.number }}</p>
-                                        <h3 class="text-lg font-semibold leading-tight">{{ chapter.title }}</h3>
-                                    </div>
-                                    <span
-                                        class="rounded-full px-2 py-1 text-[11px]"
-                                        :class="{
-                                            'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200': chapter.status === 'published',
-                                            'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200': chapter.status === 'scheduled',
-                                            'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200': chapter.status === 'draft',
-                                        }"
-                                    >
-                                        {{
-                                            chapter.status === 'published'
-                                                ? 'Publié'
-                                                : chapter.status === 'scheduled'
-                                                  ? 'Programmé'
-                                                  : 'Brouillon'
-                                        }}
-                                    </span>
-                                </div>
-                                <div class="mt-2 text-xs text-muted-foreground space-y-1">
-                                    <p>Pages : {{ chapter.pages }}</p>
-                                    <p>
-                                {{
-                                    chapter.status === 'scheduled'
-                                        ? `Publication le ${chapter.scheduledFor}`
-                                        : chapter.status === 'published'
-                                          ? `Publié le ${chapter.publishedAt}`
-                                          : 'Non publié'
-                                }}
-                            </p>
-                            <p>Vues : {{ chapter.views }}</p>
-                        </div>
-                        <div class="mt-3 flex flex-wrap gap-2 text-xs">
-                            <Link
-                                class="rounded-md border px-3 py-1 transition hover:border-primary"
-                                :href="`/creator/chapters/${chapter.id}/edit`"
-                            >
-                                Éditer
-                            </Link>
-                            <Link
-                                class="rounded-md border px-3 py-1 transition hover:border-primary"
-                                :href="`/creator/chapters/${chapter.id}`"
-                            >
-                                Détails
-                            </Link>
-                            <button
-                                type="button"
-                                class="rounded-md border px-3 py-1 transition hover:border-primary"
-                            >
-                                        Programmer
-                                    </button>
-                                    <button
-                                        type="button"
-                                        class="rounded-md border px-3 py-1 transition hover:border-primary"
-                                    >
-                                        Publier
-                                    </button>
-                                </div>
+                        <div v-if="!chapters.length" class="rounded-xl border bg-card/80 p-6 text-center text-sm text-muted-foreground">
+                            Aucun chapitre pour le moment.
+                            <div class="mt-3">
+                                <Link
+                                    :href="`/creator/series/${props.seriesId}/chapters/create`"
+                                    class="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90"
+                                >
+                                    <Plus class="h-4 w-4" />
+                                    Créer le premier
+                                </Link>
                             </div>
                         </div>
 
-                        <div v-else class="overflow-hidden rounded-xl border bg-card/80 shadow-sm">
-                            <div class="hidden grid-cols-[auto_1fr_auto_auto] items-center gap-4 border-b px-4 py-3 text-xs font-semibold text-muted-foreground md:grid">
-                                <span>#</span>
-                                <span>Titre</span>
-                                <span>Statut</span>
-                                <span>Actions</span>
-                            </div>
-                            <div
-                                v-for="chapter in paginatedChapters"
-                                :key="chapter.id"
-                                class="grid items-center gap-3 border-b px-4 py-3 last:border-b-0 md:grid-cols-[auto_1fr_auto_auto]"
-                            >
-                                <div class="text-sm font-semibold">#{{ chapter.number }}</div>
-                                <div class="space-y-1">
-                                    <div class="flex items-center gap-2">
-                                        <p class="text-sm font-semibold">{{ chapter.title }}</p>
-                                        <span
-                                            class="rounded-full px-2 py-1 text-[11px]"
-                                            :class="{
-                                                'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200': chapter.status === 'published',
-                                                'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200': chapter.status === 'scheduled',
-                                                'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200': chapter.status === 'draft',
-                                            }"
-                                        >
+                        <div v-else>
+                            <div v-if="viewMode === 'grid'" class="grid gap-4 sm:grid-cols-2">
+                                <div
+                                    v-for="chapter in chapters"
+                                    :key="chapter.id"
+                                    class="rounded-xl border bg-card/80 p-4 shadow-sm"
+                                >
+                                    <div class="mb-3 flex items-center justify-between text-xs text-muted-foreground">
+                                        <span>#{{ chapter.number }}</span>
+                                        <span class="rounded-full px-2 py-1" :class="statusClass(chapter.status)">
                                             {{
                                                 chapter.status === 'published'
                                                     ? 'Publié'
                                                     : chapter.status === 'scheduled'
-                                                      ? 'Programmé'
-                                                      : 'Brouillon'
+                                                        ? 'Programmé'
+                                                        : 'Brouillon'
                                             }}
                                         </span>
                                     </div>
                                     <div
-                                        class="h-16 w-full overflow-hidden rounded-md bg-cover bg-center"
+                                        class="mb-3 h-24 w-full overflow-hidden rounded-lg bg-cover bg-center"
                                         :style="previewStyle(chapter.preview)"
                                     ></div>
-                                    <p class="text-xs text-muted-foreground">
-                                        Pages : {{ chapter.pages }} · Vues : {{ chapter.views }}
+                                    <h3 class="text-lg font-semibold leading-tight">{{ chapter.title }}</h3>
+                                    <p class="mt-1 text-xs text-muted-foreground">
+                                        {{ chapter.pages }} page(s) · Vues {{ chapter.views ?? '—' }}
                                     </p>
                                     <p class="text-xs text-muted-foreground">
-                                {{
-                                    chapter.status === 'scheduled'
-                                        ? `Publication le ${chapter.scheduledFor}`
-                                        : chapter.status === 'published'
-                                          ? `Publié le ${chapter.publishedAt}`
-                                          : 'Non publié'
-                                }}
-                            </p>
-                        </div>
-                        <div class="text-sm md:text-center">{{ chapter.pages }} pages</div>
-                        <div class="flex flex-wrap items-center gap-2 md:justify-end">
-                            <Link
-                                class="text-xs font-semibold text-primary hover:underline"
-                                :href="`/creator/chapters/${chapter.id}/edit`"
-                            >
-                                Éditer
-                            </Link>
-                            <Link
-                                class="text-xs font-semibold text-primary hover:underline"
-                                :href="`/creator/chapters/${chapter.id}`"
-                            >
-                                Détails
-                            </Link>
-                            <button
-                                type="button"
-                                class="text-xs font-semibold text-primary hover:underline"
-                            >
-                                Programmer
+                                        {{
+                                            chapter.status === 'scheduled'
+                                                ? `Publication le ${chapter.scheduledFor}`
+                                                : chapter.status === 'published'
+                                                    ? `Publié le ${chapter.publishedAt}`
+                                                    : 'Non publié'
+                                        }}
+                                    </p>
+                                    <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                                        <Link
+                                            class="rounded-md border px-3 py-1 transition hover:border-primary"
+                                            :href="`/creator/chapters/${chapter.id}`"
+                                        >
+                                            Ouvrir
+                                        </Link>
+                                        <Link
+                                            class="rounded-md border px-3 py-1 transition hover:border-primary"
+                                            :href="`/creator/chapters/${chapter.id}/edit`"
+                                        >
+                                            Éditer
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div v-else class="overflow-hidden rounded-xl border bg-card/80 shadow-sm">
+                                <div class="hidden grid-cols-[auto_1fr_auto_auto] items-center gap-4 border-b px-4 py-3 text-xs font-semibold text-muted-foreground md:grid">
+                                    <span>#</span>
+                                    <span>Titre</span>
+                                    <span>Statut</span>
+                                    <span>Actions</span>
+                                </div>
+                                <div
+                                    v-for="chapter in chapters"
+                                    :key="chapter.id"
+                                    class="grid items-center gap-3 border-b px-4 py-3 last:border-b-0 md:grid-cols-[auto_1fr_auto_auto]"
+                                >
+                                    <div class="text-sm font-semibold">#{{ chapter.number }}</div>
+                                    <div class="space-y-1">
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-sm font-semibold">{{ chapter.title }}</p>
+                                            <span class="rounded-full px-2 py-1 text-[11px]" :class="statusClass(chapter.status)">
+                                                {{
+                                                    chapter.status === 'published'
+                                                        ? 'Publié'
+                                                        : chapter.status === 'scheduled'
+                                                            ? 'Programmé'
+                                                            : 'Brouillon'
+                                                }}
+                                            </span>
+                                        </div>
+                                        <div
+                                            class="h-16 w-full overflow-hidden rounded-md bg-cover bg-center"
+                                            :style="previewStyle(chapter.preview)"
+                                        ></div>
+                                        <p class="text-xs text-muted-foreground">
+                                            Pages : {{ chapter.pages }} · Vues : {{ chapter.views ?? '—' }}
+                                        </p>
+                                        <p class="text-xs text-muted-foreground">
+                                            {{
+                                                chapter.status === 'scheduled'
+                                                    ? `Publication le ${chapter.scheduledFor}`
+                                                    : chapter.status === 'published'
+                                                        ? `Publié le ${chapter.publishedAt}`
+                                                        : 'Non publié'
+                                            }}
+                                        </p>
+                                    </div>
+                                    <div class="text-sm md:text-center">{{ chapter.pages }} pages</div>
+                                    <div class="flex flex-wrap items-center gap-2 md:justify-end">
+                                        <Link
+                                            class="text-xs font-semibold text-primary hover:underline"
+                                            :href="`/creator/chapters/${chapter.id}`"
+                                        >
+                                            Ouvrir
+                                        </Link>
+                                        <Link
+                                            class="text-xs font-semibold text-primary hover:underline"
+                                            :href="`/creator/chapters/${chapter.id}/edit`"
+                                        >
+                                            Éditer
+                                        </Link>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mt-3 flex items-center justify-between gap-3 rounded-lg border bg-card/70 px-4 py-3 text-sm text-muted-foreground">
+                                <div>
+                                    Page {{ chaptersMeta.current_page }} / {{ chaptersMeta.last_page }}
+                                    · {{ chaptersMeta.total }} chapitre(s)
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        class="rounded-md border px-3 py-1 transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+                                        :disabled="chaptersMeta.current_page === 1"
+                                        @click="goToPage(chaptersMeta.current_page - 1)"
+                                    >
+                                        Précédent
                                     </button>
                                     <button
                                         type="button"
-                                        class="text-xs font-semibold text-primary hover:underline"
+                                        class="rounded-md border px-3 py-1 transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+                                        :disabled="chaptersMeta.current_page === chaptersMeta.last_page"
+                                        @click="goToPage(chaptersMeta.current_page + 1)"
                                     >
-                                        Publier
+                                        Suivant
                                     </button>
                                 </div>
-                            </div>
-                        </div>
-
-                        <div class="flex items-center justify-between gap-3 rounded-lg border bg-card/70 px-4 py-3 text-sm text-muted-foreground">
-                            <div>
-                                Page {{ currentPage }} / {{ totalPages }}
-                                · {{ filteredChapters.length }} chapitre(s)
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <button
-                                    type="button"
-                                    class="rounded-md border px-3 py-1 transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
-                                    :disabled="currentPage === 1"
-                                    @click="currentPage--"
-                                >
-                                    Précédent
-                                </button>
-                                <button
-                                    type="button"
-                                    class="rounded-md border px-3 py-1 transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
-                                    :disabled="currentPage === totalPages"
-                                    @click="currentPage++"
-                                >
-                                    Suivant
-                                </button>
                             </div>
                         </div>
                     </template>
                 </div>
 
                 <div class="space-y-4">
-                    <div class="rounded-xl border bg-card p-6 shadow-sm">
-                        <h3 class="text-lg font-semibold">Performances</h3>
-                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                            <div class="rounded-lg bg-muted/40 p-3">
-                                <p class="text-xs text-muted-foreground">Vues totales</p>
-                                <p class="text-xl font-semibold">1.2M</p>
-                                <p class="text-xs text-emerald-600 dark:text-emerald-300">+4.2% vs semaine</p>
-                            </div>
-                            <div class="rounded-lg bg-muted/40 p-3">
-                                <p class="text-xs text-muted-foreground">Lecteurs actifs</p>
-                                <p class="text-xl font-semibold">82.4K</p>
-                                <p class="text-xs text-emerald-600 dark:text-emerald-300">+2.1% vs semaine</p>
-                            </div>
-                            <div class="rounded-lg bg-muted/40 p-3">
-                                <p class="text-xs text-muted-foreground">Rétention chapitre</p>
-                                <p class="text-xl font-semibold">76%</p>
-                                <p class="text-xs text-emerald-600 dark:text-emerald-300">+1.4% vs semaine</p>
-                            </div>
-                            <div class="rounded-lg bg-muted/40 p-3">
-                                <p class="text-xs text-muted-foreground">Popularité (likes)</p>
-                                <p class="text-xl font-semibold">{{ seriesLikeRatio }}</p>
-                                <p class="text-xs text-muted-foreground">
-                                    Likes {{ seriesStats.likes }} · Dislikes {{ seriesStats.dislikes }} · Note {{ seriesStats.rating }}
-                                </p>
+                    <div class="overflow-hidden rounded-xl border bg-card shadow-sm">
+                        <div
+                            class="h-32 w-full bg-cover bg-center"
+                            :style="previewStyle(series.hero || series.cover)"
+                        ></div>
+                        <div class="space-y-3 p-6 text-sm text-muted-foreground">
+                            <p v-if="series.synopsis">{{ series.synopsis }}</p>
+                            <div class="flex flex-wrap gap-2 text-xs">
+                                <span class="rounded-full bg-muted px-2 py-1">{{ typeLabel(series.type) }}</span>
+                                <span class="rounded-full bg-muted px-2 py-1">{{ statusLabel(series.status) }}</span>
+                                <span class="rounded-full bg-muted px-2 py-1">{{ formatLabel(series.format) }}</span>
+                                <span class="rounded-full bg-muted px-2 py-1">{{ frequencyLabel(series.frequency) }}</span>
+                                <span v-if="series.language" class="rounded-full bg-muted px-2 py-1">
+                                    Langue : {{ series.language?.toUpperCase() }}
+                                </span>
                             </div>
                         </div>
                     </div>
-
-                    <div class="rounded-xl border bg-card p-6 shadow-sm space-y-3">
-                        <h3 class="text-lg font-semibold">Infos série</h3>
-                        <p class="text-sm text-muted-foreground">
-                            Résumé fictif : un artefact ancien propulse un jeune guerrier dans une guerre entre royaumes.
-                            Les choix du héros conditionnent l’équilibre du monde.
-                        </p>
-                        <div class="flex flex-wrap gap-2 text-xs">
-                            <span class="rounded-full bg-muted px-2 py-1">Type : Manga</span>
-                            <span class="rounded-full bg-muted px-2 py-1">Statut : En cours</span>
-                            <span class="rounded-full bg-muted px-2 py-1">Format : Série longue</span>
-                            <span class="rounded-full bg-muted px-2 py-1">Fréquence : Hebdomadaire</span>
-                            <span class="rounded-full bg-muted px-2 py-1">Likes {{ seriesStats.likes }} · Dislikes {{ seriesStats.dislikes }}</span>
-                            <span class="rounded-full bg-muted px-2 py-1">Note {{ seriesStats.rating }}</span>
-                        </div>
-                    </div>
-                    </div>
-
-                    <div class="rounded-xl border bg-card p-6 shadow-sm space-y-3">
-                        <h3 class="text-lg font-semibold">Commentaires (mock)</h3>
-                        <div class="rounded-lg border bg-muted/30 p-3 text-sm">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="font-semibold">ReaderX</p>
-                                    <p class="text-xs text-muted-foreground">“Super rythme, hâte de la suite.”</p>
-                                </div>
-                                <div class="text-xs text-muted-foreground">+24 / -2</div>
-                            </div>
-                            <div class="mt-2 flex flex-wrap gap-2 text-xs">
-                                <button class="rounded-md border px-2 py-1 hover:border-primary">Répondre</button>
-                                <button class="rounded-md border px-2 py-1 hover:border-primary">Aimer</button>
-                                <button class="rounded-md border px-2 py-1 hover:border-primary">Pas d’accord</button>
-                            </div>
-                            <div class="mt-2 rounded-md border bg-card/60 p-2 text-xs">
-                                <p class="font-semibold">Réponse auteur</p>
-                                <p class="text-muted-foreground">Merci, prochaine sortie le 15/12 !</p>
-                            </div>
-                        </div>
-                        <div class="rounded-lg border bg-muted/30 p-3 text-sm">
-                            <div class="flex items-center justify-between">
-                                <div>
-                                    <p class="font-semibold">MangaFan</p>
-                                    <p class="text-xs text-muted-foreground">“Le cliffhanger est top.”</p>
-                                </div>
-                                <div class="text-xs text-muted-foreground">+12 / -1</div>
-                            </div>
-                            <div class="mt-2 flex flex-wrap gap-2 text-xs">
-                                <button class="rounded-md border px-2 py-1 hover:border-primary">Répondre</button>
-                                <button class="rounded-md border px-2 py-1 hover:border-primary">Aimer</button>
-                                <button class="rounded-md border px-2 py-1 hover:border-primary">Pas d’accord</button>
-                            </div>
-                        </div>
                 </div>
             </div>
         </div>
