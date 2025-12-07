@@ -241,27 +241,33 @@ const previewStyle = (src?: string) =>
                                 <div class="mt-2 text-xs text-muted-foreground space-y-1">
                                     <p>Pages : {{ chapter.pages }}</p>
                                     <p>
-                                        {{
-                                            chapter.status === 'scheduled'
-                                                ? `Publication le ${chapter.scheduledFor}`
-                                                : chapter.status === 'published'
-                                                  ? `Publié le ${chapter.publishedAt}`
-                                                  : 'Non publié'
-                                        }}
-                                    </p>
-                                    <p>Vues : {{ chapter.views }}</p>
-                                </div>
-                                <div class="mt-3 flex flex-wrap gap-2 text-xs">
-                                    <Link
-                                        class="rounded-md border px-3 py-1 transition hover:border-primary"
-                                        :href="`/creator/chapters/${chapter.id}/edit`"
-                                    >
-                                        Éditer
-                                    </Link>
-                                    <button
-                                        type="button"
-                                        class="rounded-md border px-3 py-1 transition hover:border-primary"
-                                    >
+                                {{
+                                    chapter.status === 'scheduled'
+                                        ? `Publication le ${chapter.scheduledFor}`
+                                        : chapter.status === 'published'
+                                          ? `Publié le ${chapter.publishedAt}`
+                                          : 'Non publié'
+                                }}
+                            </p>
+                            <p>Vues : {{ chapter.views }}</p>
+                        </div>
+                        <div class="mt-3 flex flex-wrap gap-2 text-xs">
+                            <Link
+                                class="rounded-md border px-3 py-1 transition hover:border-primary"
+                                :href="`/creator/chapters/${chapter.id}/edit`"
+                            >
+                                Éditer
+                            </Link>
+                            <Link
+                                class="rounded-md border px-3 py-1 transition hover:border-primary"
+                                :href="`/creator/chapters/${chapter.id}`"
+                            >
+                                Détails
+                            </Link>
+                            <button
+                                type="button"
+                                class="rounded-md border px-3 py-1 transition hover:border-primary"
+                            >
                                         Programmer
                                     </button>
                                     <button
@@ -315,28 +321,34 @@ const previewStyle = (src?: string) =>
                                         Pages : {{ chapter.pages }} · Vues : {{ chapter.views }}
                                     </p>
                                     <p class="text-xs text-muted-foreground">
-                                        {{
-                                            chapter.status === 'scheduled'
-                                                ? `Publication le ${chapter.scheduledFor}`
-                                                : chapter.status === 'published'
-                                                  ? `Publié le ${chapter.publishedAt}`
-                                                  : 'Non publié'
-                                        }}
-                                    </p>
-                                </div>
-                                <div class="text-sm md:text-center">{{ chapter.pages }} pages</div>
-                                <div class="flex flex-wrap items-center gap-2 md:justify-end">
-                                    <Link
-                                        class="text-xs font-semibold text-primary hover:underline"
-                                        :href="`/creator/chapters/${chapter.id}/edit`"
-                                    >
-                                        Éditer
-                                    </Link>
-                                    <button
-                                        type="button"
-                                        class="text-xs font-semibold text-primary hover:underline"
-                                    >
-                                        Programmer
+                                {{
+                                    chapter.status === 'scheduled'
+                                        ? `Publication le ${chapter.scheduledFor}`
+                                        : chapter.status === 'published'
+                                          ? `Publié le ${chapter.publishedAt}`
+                                          : 'Non publié'
+                                }}
+                            </p>
+                        </div>
+                        <div class="text-sm md:text-center">{{ chapter.pages }} pages</div>
+                        <div class="flex flex-wrap items-center gap-2 md:justify-end">
+                            <Link
+                                class="text-xs font-semibold text-primary hover:underline"
+                                :href="`/creator/chapters/${chapter.id}/edit`"
+                            >
+                                Éditer
+                            </Link>
+                            <Link
+                                class="text-xs font-semibold text-primary hover:underline"
+                                :href="`/creator/chapters/${chapter.id}`"
+                            >
+                                Détails
+                            </Link>
+                            <button
+                                type="button"
+                                class="text-xs font-semibold text-primary hover:underline"
+                            >
+                                Programmer
                                     </button>
                                     <button
                                         type="button"
