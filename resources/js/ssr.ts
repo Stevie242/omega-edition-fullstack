@@ -3,6 +3,9 @@ import createServer from '@inertiajs/vue3/server';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createSSRApp, DefineComponent, h } from 'vue';
 import { renderToString } from 'vue/server-renderer';
+import { createPinia } from 'pinia';
+import PrimeVue from 'primevue/config';
+import Aura from '@primeuix/themes/aura';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -17,8 +20,19 @@ createServer(
                     `./pages/${name}.vue`,
                     import.meta.glob<DefineComponent>('./pages/**/*.vue'),
                 ),
-            setup: ({ App, props, plugin }) =>
-                createSSRApp({ render: () => h(App, props) }).use(plugin),
+            setup: ({ App, props, plugin }) => {
+                const pinia = createPinia();
+
+                return createSSRApp({ render: () => h(App, props) })
+                    .use(plugin)
+                    .use(pinia)
+                    .use(PrimeVue, {
+                        theme: {
+                            preset: Aura,
+                        },
+                        ripple: true,
+                    });
+            },
         }),
     { cluster: true },
 );

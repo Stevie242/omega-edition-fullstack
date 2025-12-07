@@ -4,6 +4,9 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
+import { createPinia } from 'pinia';
+import PrimeVue from 'primevue/config';
+import Aura from '@primeuix/themes/aura';
 import { initializeTheme } from './composables/useAppearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -16,8 +19,17 @@ createInertiaApp({
             import.meta.glob<DefineComponent>('./pages/**/*.vue'),
         ),
     setup({ el, App, props, plugin }) {
+        const pinia = createPinia();
+
         createApp({ render: () => h(App, props) })
             .use(plugin)
+            .use(pinia)
+            .use(PrimeVue, {
+                theme: {
+                    preset: Aura,
+                },
+                ripple: true,
+            })
             .mount(el);
     },
     progress: {
