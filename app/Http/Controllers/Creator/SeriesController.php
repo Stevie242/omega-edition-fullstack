@@ -121,7 +121,9 @@ class SeriesController extends Controller
             ->orderByDesc('number')
             ->paginate(12);
 
-        $mappedChapters = $chapters->getCollection()->map(function (Chapter $chapter) {
+        $disk = Storage::disk(config('filesystems.images_disk', 'images'));
+
+        $mappedChapters = $chapters->getCollection()->map(function (Chapter $chapter) use ($disk) {
             $previewPath = optional($chapter->pages->first())->path;
             return [
                 'id' => $chapter->id,
@@ -135,7 +137,7 @@ class SeriesController extends Controller
                 'likes' => $chapter->likes_count,
                 'dislikes' => $chapter->dislikes_count,
                 'rating' => $chapter->rating,
-                'preview' => $previewPath ? url(Storage()->disk(config('filesystems.images_disk', 'images'))->url($previewPath)) : null,
+                'preview' => $previewPath ? url($disk->url($previewPath)) : null,
             ];
         });
 

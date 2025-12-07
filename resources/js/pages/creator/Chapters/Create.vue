@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import CreatorLayout from '@/layouts/CreatorLayout.vue';
-import { Link } from '@inertiajs/vue3';
-import { ArrowLeft, CalendarClock, ChevronDown, ChevronUp, GripVertical, Upload, X } from 'lucide-vue-next';
-import { ref, computed } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { ArrowLeft, CalendarClock, ChevronDown, ChevronUp, GripVertical, Loader2, Upload, X } from 'lucide-vue-next';
+import { computed, onUnmounted, reactive, ref, watch } from 'vue';
 
 const props = defineProps<{
     seriesId: string;
@@ -17,46 +17,59 @@ type PageItem = {
     order: number;
 };
 
-const form = ref({
+type ChapterForm = {
+    title: string;
+    number: string;
+    status: 'draft' | 'scheduled' | 'published';
+    scheduled_for: string;
+    pages: PageItem[];
+};
+
+const form = reactive<ChapterForm>({
     title: '',
     number: '',
     status: 'draft',
-    scheduledAt: '',
-    pages: [] as PageItem[],
+    scheduled_for: '',
+    pages: [],
 });
 
-const sortedPages = computed(() =>
-    [...form.value.pages].sort((a, b) => a.order - b.order),
-);
+const processing = ref(false);
 
+const sortedPages = computed(() => [...form.pages].sort((a, b) => a.order - b.order));
 const dragSourceId = ref<number | null>(null);
+
+const pageProps = usePage();
+const errors = computed<Record<string, string | string[]>>(
+    () => (pageProps.props.errors as Record<string, string | string[]>) ?? {},
+);
+const errorFor = (key: string): string => {
+    const value = errors.value?.[key];
+    if (!value) return '';
+    return Array.isArray(value) ? value.join(' ') : value;
+};
 
 const addFiles = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const files = target.files;
     if (!files) return;
 
-    const startOrder = form.value.pages.length;
+    const startOrder = form.pages.length;
     Array.from(files).forEach((file, idx) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const preview = (e.target?.result as string) ?? undefined;
-            form.value.pages.push({
-                id: Date.now() + idx,
-                name: file.name,
-                size: `${Math.round(file.size / 1024)} KB`,
-                preview,
-                file,
-                order: startOrder + idx,
-            });
-        };
-        reader.readAsDataURL(file);
+        const preview = URL.createObjectURL(file);
+        form.pages.push({
+            id: Date.now() + idx,
+            name: file.name,
+            size: `${Math.round(file.size / 1024)} KB`,
+            preview,
+            file,
+            order: startOrder + idx,
+        });
     });
     target.value = '';
 };
 
 const removePage = (id: number) => {
-    form.value.pages = form.value.pages.filter((p) => p.id !== id);
+    form.pages = form.pages.filter((p) => p.id !== id);
 };
 
 const movePage = (id: number, direction: 'up' | 'down') => {
@@ -70,14 +83,8 @@ const movePage = (id: number, direction: 'up' | 'down') => {
     const tmp = current.order;
     current.order = target.order;
     target.order = tmp;
-    form.value.pages = [...pages];
+    form.pages = [...pages];
 };
-
-const statusOptions = [
-    { value: 'draft', label: 'Brouillon' },
-    { value: 'scheduled', label: 'Programmé' },
-    { value: 'published', label: 'Publié' },
-];
 
 const handleDragStart = (id: number) => {
     dragSourceId.value = id;
@@ -92,9 +99,50 @@ const handleDrop = (id: number) => {
     const tmp = current.order;
     current.order = target.order;
     target.order = tmp;
-    form.value.pages = [...pages];
+    form.pages = [...pages];
     dragSourceId.value = null;
 };
+
+const submit = () => {
+    const formData = new FormData();
+    formData.append('title', form.title);
+    formData.append('number', form.number);
+    formData.append('status', form.status);
+    if (form.status === 'scheduled' && form.scheduled_for) {
+        formData.append('scheduled_for', form.scheduled_for);
+    }
+
+    sortedPages.value.forEach((page, idx) => {
+        if (page.file) {
+            formData.append('pages[]', page.file);
+            formData.append('orders[]', String(page.order ?? idx));
+        }
+    });
+
+    processing.value = true;
+    router.post(`/creator/series/${props.seriesId}/chapters`, formData, {
+        forceFormData: true,
+        preserveScroll: true,
+        onFinish: () => {
+            processing.value = false;
+        },
+    });
+};
+
+watch(
+    () => form.status,
+    (val) => {
+        if (val !== 'scheduled') {
+            form.scheduled_for = '';
+        }
+    },
+);
+
+onUnmounted(() => {
+    form.pages.forEach((p) => {
+        if (p.preview?.startsWith('blob:')) URL.revokeObjectURL(p.preview);
+    });
+});
 </script>
 
 <template>
@@ -108,7 +156,7 @@ const handleDrop = (id: number) => {
             { title: 'Créer' },
         ]"
     >
-        <div class="space-y-4">
+        <form class="space-y-4" @submit.prevent="submit">
             <Link
                 class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:border-primary hover:text-primary"
                 :href="`/creator/series/${props.seriesId}/chapters`"
@@ -130,6 +178,7 @@ const handleDrop = (id: number) => {
                                     class="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/20"
                                     placeholder="Titre du chapitre"
                                 />
+                                <p v-if="errorFor('title')" class="text-xs text-destructive">{{ errorFor('title') }}</p>
                             </div>
                             <div class="space-y-2">
                                 <label class="text-sm font-medium">Numéro</label>
@@ -140,6 +189,7 @@ const handleDrop = (id: number) => {
                                     class="w-full rounded-md border bg-background px-3 py-2 text-sm outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/20"
                                     placeholder="42"
                                 />
+                                <p v-if="errorFor('number')" class="text-xs text-destructive">{{ errorFor('number') }}</p>
                             </div>
                             <div class="space-y-2">
                                 <label class="text-sm font-medium">Statut</label>
@@ -147,21 +197,26 @@ const handleDrop = (id: number) => {
                                     v-model="form.status"
                                     class="w-full rounded-md border bg-background px-3 py-2 text-sm shadow-sm transition focus:border-primary focus:outline-none focus:ring focus:ring-primary/20"
                                 >
-                                    <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">
-                                        {{ opt.label }}
-                                    </option>
+                                    <option value="draft">Brouillon</option>
+                                    <option value="scheduled">Programmé</option>
+                                    <option value="published">Publié</option>
                                 </select>
+                                <p v-if="errorFor('status')" class="text-xs text-destructive">{{ errorFor('status') }}</p>
                             </div>
                             <div class="space-y-2 md:col-span-2">
                                 <label class="text-sm font-medium">Date/heure de publication (si programmé)</label>
                                 <div class="relative">
                                     <CalendarClock class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <input
-                                        v-model="form.scheduledAt"
+                                        v-model="form.scheduled_for"
                                         type="datetime-local"
-                                        class="w-full rounded-md border bg-background py-2 pl-9 pr-3 text-sm outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/20"
+                                        :disabled="form.status !== 'scheduled'"
+                                        class="w-full rounded-md border bg-background py-2 pl-9 pr-3 text-sm outline-none ring-2 ring-transparent transition focus:border-primary focus:ring-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
                                     />
                                 </div>
+                                <p v-if="errorFor('scheduled_for')" class="text-xs text-destructive">
+                                    {{ errorFor('scheduled_for') }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -177,7 +232,7 @@ const handleDrop = (id: number) => {
                         </div>
 
                         <div v-if="!sortedPages.length" class="rounded-lg border border-dashed bg-muted/40 p-4 text-sm text-muted-foreground">
-                            Aucune page pour l instant. Ajoute des images pour voir un aperçu et réordonner.
+                            Aucune page pour l'instant. Ajoute des images pour voir un aperçu et réordonner.
                         </div>
 
                         <div v-else class="flex flex-col gap-3">
@@ -235,6 +290,9 @@ const handleDrop = (id: number) => {
                                 </div>
                             </div>
                         </div>
+                        <p v-if="errorFor('pages') || errorFor('pages.0')" class="text-xs text-destructive">
+                            {{ errorFor('pages') || errorFor('pages.0') }}
+                        </p>
                     </div>
                 </div>
 
@@ -243,27 +301,23 @@ const handleDrop = (id: number) => {
                         <h2 class="text-lg font-semibold">Actions</h2>
                         <div class="flex flex-col gap-3">
                             <button
-                                type="button"
-                                class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90"
+                                type="submit"
+                                class="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+                                :disabled="processing"
                             >
-                                Enregistrer le brouillon
+                                <Loader2 v-if="processing" class="h-4 w-4 animate-spin" />
+                                <span>{{ processing ? 'Envoi...' : 'Enregistrer' }}</span>
                             </button>
-                            <button
-                                type="button"
+                            <Link
+                                :href="`/creator/series/${props.seriesId}/chapters`"
                                 class="inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition hover:border-primary"
                             >
-                                Programmer
-                            </button>
-                            <button
-                                type="button"
-                                class="inline-flex items-center justify-center gap-2 rounded-md border px-4 py-2 text-sm font-medium transition hover:border-primary"
-                            >
-                                Publier maintenant
-                            </button>
+                                Annuler
+                            </Link>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </form>
     </CreatorLayout>
 </template>
