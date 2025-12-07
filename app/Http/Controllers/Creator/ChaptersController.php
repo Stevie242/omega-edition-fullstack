@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -19,8 +20,55 @@ class ChaptersController extends Controller
 {
     public function index(string $series): Response
     {
+        $serie = Series::where('id', $series)
+            ->where('creator_id', Auth::id())
+            ->firstOrFail();
+
+        $chapters = Chapter::query()
+            ->where('series_id', $serie->id)
+            ->withCount('pages')
+            ->with(['pages' => fn ($q) => $q->orderBy('order')->limit(1)])
+            ->when(request()->filled('status'), fn ($q) => $q->where('status', request()->string('status')))
+            ->when(request()->filled('search'), function ($q) {
+                $search = request()->string('search');
+                $q->where(function ($sub) use ($search) {
+                    $sub->where('title', 'like', "%{$search}%")
+                        ->orWhere('number', 'like', "%{$search}%");
+                });
+            })
+            ->orderByDesc('number')
+            ->paginate(12)
+            ->withQueryString();
+
+        $disk = Storage::disk(config('filesystems.images_disk', 'images'));
+
+        $mapped = $chapters->getCollection()->map(function (Chapter $chapter) use ($disk) {
+            $previewPath = optional($chapter->pages->first())->path;
+            return [
+                'id' => $chapter->id,
+                'title' => $chapter->title,
+                'number' => $chapter->number,
+                'status' => $chapter->status,
+                'scheduledFor' => optional($chapter->scheduled_for)?->toDateTimeString(),
+                'publishedAt' => optional($chapter->published_at)?->toDateTimeString(),
+                'pages' => $chapter->pages_count,
+                'views' => $chapter->views,
+                'preview' => $previewPath ? url($disk->url($previewPath)) : null,
+            ];
+        });
+
         return Inertia::render('creator/Chapters/Index', [
-            'seriesId' => $series,
+            'seriesId' => $serie->id,
+            'chapters' => $mapped,
+            'meta' => [
+                'current_page' => $chapters->currentPage(),
+                'last_page' => $chapters->lastPage(),
+                'total' => $chapters->total(),
+            ],
+            'filters' => [
+                'status' => request()->string('status'),
+                'search' => request()->string('search'),
+            ],
         ]);
     }
 

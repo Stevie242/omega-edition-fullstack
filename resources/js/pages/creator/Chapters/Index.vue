@@ -1,75 +1,83 @@
 <script setup lang="ts">
 import CreatorLayout from '@/layouts/CreatorLayout.vue';
-import { Link } from '@inertiajs/vue3';
-import { onMounted, ref, computed } from 'vue';
+import { Link, router, usePage } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 import { ArrowLeft, CalendarClock, LayoutGrid, List, Plus, Search } from 'lucide-vue-next';
-
-const props = defineProps<{
-    seriesId: string;
-}>();
+import { useToast } from 'primevue/usetoast';
 
 type Chapter = {
-    id: number;
+    id: string;
     title: string;
     number: number;
     status: 'draft' | 'scheduled' | 'published';
-    scheduledFor?: string;
-    publishedAt?: string;
+    scheduledFor?: string | null;
+    publishedAt?: string | null;
     pages: number;
-    views: string;
-    preview?: string;
-    likes?: number;
-    dislikes?: number;
-    rating?: number;
+    views: number;
+    preview?: string | null;
 };
 
-const loading = ref(true);
+const props = defineProps<{
+    seriesId: string;
+    chapters: Chapter[];
+    meta: { current_page: number; last_page: number; total: number };
+    filters?: { status?: string; search?: string };
+}>();
+
 const viewMode = ref<'grid' | 'list'>('grid');
-const query = ref('');
-const statusFilter = ref<'all' | Chapter['status']>('all');
-const currentPage = ref(1);
-const perPage = ref(8);
-
-const chapters = ref<Chapter[]>([
-    { id: 1, title: 'Chapitre 42', number: 42, status: 'scheduled', scheduledFor: '2025-12-15 10:00', pages: 28, views: '12.4K', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 820, dislikes: 42, rating: 4.6 },
-    { id: 2, title: 'Chapitre 41', number: 41, status: 'published', publishedAt: '2025-12-02', pages: 30, views: '18.1K', preview: 'https://images.unsplash.com/photo-1504274066651-8d31a536b11a?auto=format&fit=crop&w=600&q=60', likes: 1290, dislikes: 64, rating: 4.7 },
-    { id: 3, title: 'Chapitre 40', number: 40, status: 'published', publishedAt: '2025-11-25', pages: 26, views: '17.8K', preview: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=60', likes: 1175, dislikes: 71, rating: 4.6 },
-    { id: 4, title: 'Chapitre 39', number: 39, status: 'draft', pages: 24, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 0, dislikes: 0, rating: 0 },
-    { id: 5, title: 'Chapitre 38', number: 38, status: 'published', publishedAt: '2025-11-11', pages: 25, views: '16.2K', preview: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=60', likes: 980, dislikes: 58, rating: 4.5 },
-    { id: 6, title: 'Chapitre 37', number: 37, status: 'published', publishedAt: '2025-11-04', pages: 23, views: '15.9K', preview: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=60', likes: 910, dislikes: 55, rating: 4.5 },
-    { id: 7, title: 'Chapitre 36', number: 36, status: 'draft', pages: 21, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 0, dislikes: 0, rating: 0 },
-    { id: 8, title: 'Chapitre 35', number: 35, status: 'published', publishedAt: '2025-10-28', pages: 22, views: '14.3K', preview: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=60', likes: 840, dislikes: 60, rating: 4.4 },
-]);
-
-const filteredChapters = computed(() => {
-    const q = query.value.trim().toLowerCase();
-    return chapters.value.filter((c) => {
-        const matchQuery =
-            !q ||
-            c.title.toLowerCase().includes(q) ||
-            String(c.number).includes(q);
-        const matchStatus = statusFilter.value === 'all' || c.status === statusFilter.value;
-        return matchQuery && matchStatus;
-    });
-});
-
-const totalPages = computed(() =>
-    Math.max(1, Math.ceil(filteredChapters.value.length / perPage.value)),
+const query = ref(props.filters?.search ?? '');
+const statusFilter = ref<'all' | Chapter['status']>(
+    (props.filters?.status as any) ?? 'all',
 );
+const loading = ref(false);
 
-const paginatedChapters = computed(() => {
-    const start = (currentPage.value - 1) * perPage.value;
-    return filteredChapters.value.slice(start, start + perPage.value);
-});
+const toast = useToast();
+const flash = usePage().props.flash as { success?: string };
 
-onMounted(() => {
-    setTimeout(() => (loading.value = false), 500);
-});
-
-const previewStyle = (src?: string) =>
+const previewStyle = (src?: string | null) =>
     src
         ? { backgroundImage: `url(${src})` }
         : { backgroundImage: 'linear-gradient(135deg, #1f2937 0%, #0ea5e9 100%)' };
+
+const fetchPage = (page = 1) => {
+    loading.value = true;
+    router.get(
+        `/creator/series/${props.seriesId}/chapters`,
+        {
+            page,
+            search: query.value || undefined,
+            status: statusFilter.value === 'all' ? undefined : statusFilter.value,
+        },
+        {
+            preserveState: true,
+            replace: true,
+            preserveScroll: true,
+            onFinish: () => {
+                loading.value = false;
+            },
+        },
+    );
+};
+
+watch([query, statusFilter], () => {
+    fetchPage(1);
+});
+
+const nextPage = () => {
+    if (props.meta.current_page < props.meta.last_page) {
+        fetchPage(props.meta.current_page + 1);
+    }
+};
+
+const prevPage = () => {
+    if (props.meta.current_page > 1) {
+        fetchPage(props.meta.current_page - 1);
+    }
+};
+
+if (flash?.success) {
+    toast.add({ severity: 'success', summary: flash.success, life: 2500 });
+}
 </script>
 
 <template>
@@ -153,7 +161,7 @@ const previewStyle = (src?: string) =>
             </div>
 
             <div v-if="loading" class="grid gap-4 sm:grid-cols-2">
-                <div v-for="n in perPage" :key="n" class="rounded-xl border bg-card/80 p-4 shadow-sm">
+                <div v-for="n in 8" :key="n" class="rounded-xl border bg-card/80 p-4 shadow-sm">
                     <div class="h-16 w-full animate-pulse rounded bg-muted" />
                     <div class="mt-3 space-y-2">
                         <div class="h-4 w-2/3 animate-pulse rounded bg-muted" />
@@ -167,9 +175,13 @@ const previewStyle = (src?: string) =>
             </div>
 
             <template v-else>
-                <div v-if="viewMode === 'grid'" class="grid gap-4 sm:grid-cols-2">
+                <div v-if="!chapters.length" class="rounded-xl border bg-card/80 p-6 text-center text-sm text-muted-foreground">
+                    Aucun chapitre pour le moment.
+                </div>
+
+                <div v-else-if="viewMode === 'grid'" class="grid gap-4 sm:grid-cols-2">
                     <div
-                        v-for="chapter in paginatedChapters"
+                        v-for="chapter in chapters"
                         :key="chapter.id"
                         class="rounded-xl border bg-card/80 p-4 shadow-sm"
                     >
@@ -199,20 +211,19 @@ const previewStyle = (src?: string) =>
                                 }}
                             </span>
                         </div>
-                                <div class="mt-2 text-xs text-muted-foreground space-y-1">
-                                    <p>Pages : {{ chapter.pages }}</p>
-                                    <p>
-                                        {{
-                                            chapter.status === 'scheduled'
-                                                ? `Publication le ${chapter.scheduledFor}`
-                                                : chapter.status === 'published'
-                                                  ? `Publié le ${chapter.publishedAt}`
-                                                  : 'Non publié'
-                                        }}
-                                    </p>
-                                    <p>Vues : {{ chapter.views }}</p>
-                                    <p v-if="chapter.likes !== undefined">Likes : {{ chapter.likes }} · Dislikes : {{ chapter.dislikes }} · Note {{ chapter.rating ?? '—' }}</p>
-                                </div>
+                        <div class="mt-2 text-xs text-muted-foreground space-y-1">
+                            <p>Pages : {{ chapter.pages }}</p>
+                            <p>
+                                {{
+                                    chapter.status === 'scheduled'
+                                        ? `Publication le ${chapter.scheduledFor}`
+                                        : chapter.status === 'published'
+                                          ? `Publié le ${chapter.publishedAt}`
+                                          : 'Non publié'
+                                }}
+                            </p>
+                            <p>Vues : {{ chapter.views }}</p>
+                        </div>
                         <div class="mt-3 flex flex-wrap gap-2 text-xs">
                             <Link
                                 class="rounded-md border px-3 py-1 transition hover:border-primary"
@@ -250,7 +261,7 @@ const previewStyle = (src?: string) =>
                         <span>Actions</span>
                     </div>
                     <div
-                        v-for="chapter in paginatedChapters"
+                        v-for="chapter in chapters"
                         :key="chapter.id"
                         class="grid items-center gap-3 border-b px-4 py-3 last:border-b-0 md:grid-cols-[auto_1fr_auto_auto]"
                     >
@@ -318,23 +329,23 @@ const previewStyle = (src?: string) =>
 
                 <div class="flex items-center justify-between gap-3 rounded-lg border bg-card/70 px-4 py-3 text-sm text-muted-foreground">
                     <div>
-                        Page {{ currentPage }} / {{ totalPages }}
-                        · {{ filteredChapters.length }} chapitre(s)
+                        Page {{ meta.current_page }} / {{ meta.last_page }}
+                        · {{ meta.total }} chapitre(s)
                     </div>
                     <div class="flex items-center gap-2">
                         <button
                             type="button"
                             class="rounded-md border px-3 py-1 transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
-                            :disabled="currentPage === 1"
-                            @click="currentPage--"
+                            :disabled="meta.current_page === 1"
+                            @click="prevPage"
                         >
                             Précédent
                         </button>
                         <button
                             type="button"
                             class="rounded-md border px-3 py-1 transition hover:border-primary disabled:cursor-not-allowed disabled:opacity-50"
-                            :disabled="currentPage === totalPages"
-                            @click="currentPage++"
+                            :disabled="meta.current_page === meta.last_page"
+                            @click="nextPage"
                         >
                             Suivant
                         </button>
