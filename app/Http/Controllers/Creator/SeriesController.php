@@ -10,6 +10,7 @@ use App\Services\MediaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -25,9 +26,10 @@ class SeriesController extends Controller
             ->with('tags')
             ->withCount('chapters')
             ->where('creator_id', $userId)
-            ->when($request->string('status'), fn ($q, $status) => $q->where('status', $status))
-            ->when($request->string('type'), fn ($q, $type) => $q->where('type', $type))
-            ->when($request->string('search'), function ($q, $search) {
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('type'), fn ($q) => $q->where('type', $request->string('type')))
+            ->when($request->filled('search'), function ($q) use ($request) {
+                $search = $request->string('search');
                 $q->where(function ($sub) use ($search) {
                     $sub->where('title', 'like', "%{$search}%")
                         ->orWhere('synopsis', 'like', "%{$search}%");
@@ -211,8 +213,9 @@ class SeriesController extends Controller
 
     private function mapSeries(Series $series): array
     {
-        $cover = $series->cover_path ? Storage()->disk(config('filesystems.images_disk', 'images'))->url($series->cover_path) : null;
-        $hero = $series->hero_path ? Storage()->disk(config('filesystems.images_disk', 'images'))->url($series->hero_path) : null;
+        $disk = Storage::disk(config('filesystems.images_disk', 'images'));
+        $cover = $series->cover_path ? $disk->url($series->cover_path) : null;
+        $hero = $series->hero_path ? $disk->url($series->hero_path) : null;
 
         $nextRelease = Chapter::where('series_id', $series->id)
             ->where('status', 'scheduled')
