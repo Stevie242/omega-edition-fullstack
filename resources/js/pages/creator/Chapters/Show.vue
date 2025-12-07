@@ -25,6 +25,8 @@ const chapter = ref({
     publishedAt: '—',
     pagesCount: 28,
     views: '12.4K',
+    likes: 820,
+    dislikes: 42,
 });
 
 const pages = ref<PageItem[]>([
@@ -109,6 +111,7 @@ onMounted(() => {
                         <div class="flex flex-wrap gap-2 text-xs text-muted-foreground">
                             <span class="rounded-full bg-muted px-2 py-1">Pages : {{ chapter.pagesCount }}</span>
                             <span class="rounded-full bg-muted px-2 py-1">Vues : {{ chapter.views }}</span>
+                            <span class="rounded-full bg-muted px-2 py-1">Likes : {{ chapter.likes }} · Dislikes : {{ chapter.dislikes }}</span>
                             <span class="rounded-full bg-muted px-2 py-1">
                                 {{
                                     chapter.status === 'scheduled'
@@ -127,6 +130,18 @@ onMounted(() => {
                                 <Pencil class="h-4 w-4" />
                                 Éditer
                             </Link>
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-2 rounded-md border px-3 py-2 transition hover:border-primary"
+                            >
+                                Aimer
+                            </button>
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-2 rounded-md border px-3 py-2 transition hover:border-primary"
+                            >
+                                Pas d’accord
+                            </button>
                             <button
                                 type="button"
                                 class="inline-flex items-center gap-2 rounded-md border px-3 py-2 transition hover:border-primary"
@@ -163,6 +178,42 @@ onMounted(() => {
                             </div>
                         </div>
                     </div>
+
+                    <div class="rounded-xl border bg-card p-6 shadow-sm space-y-3">
+                        <h2 class="text-lg font-semibold">Commentaires (mock)</h2>
+                        <div class="rounded-lg border bg-muted/30 p-3 text-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold">ReaderX</p>
+                                    <p class="text-xs text-muted-foreground">“Super mise en scène !”</p>
+                                </div>
+                                <div class="text-xs text-muted-foreground">+24 / -2</div>
+                            </div>
+                            <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Répondre</button>
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Aimer</button>
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Pas d’accord</button>
+                            </div>
+                            <div class="mt-2 rounded-md border bg-card/60 p-2 text-xs">
+                                <p class="font-semibold">Réponse auteur</p>
+                                <p class="text-muted-foreground">Merci ! Prochain chapitre le 15/12.</p>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border bg-muted/30 p-3 text-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold">MangaFan</p>
+                                    <p class="text-xs text-muted-foreground">“La fin est folle.”</p>
+                                </div>
+                                <div class="text-xs text-muted-foreground">+12 / -1</div>
+                            </div>
+                            <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Répondre</button>
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Aimer</button>
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Pas d’accord</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="space-y-4">
@@ -175,9 +226,15 @@ onMounted(() => {
                                 <p class="text-xs text-emerald-600 dark:text-emerald-300">+4% vs chap. précédent</p>
                             </div>
                             <div class="rounded-lg bg-muted/40 p-3">
-                                <p class="text-xs text-muted-foreground">Complétion</p>
-                                <p class="text-xl font-semibold">71%</p>
-                                <p class="text-xs text-emerald-600 dark:text-emerald-300">+1.2% vs chap. précédent</p>
+                                <p class="text-xs text-muted-foreground">Likes ratio</p>
+                                <p class="text-xl font-semibold">
+                                    {{
+                                        chapter.likes + chapter.dislikes === 0
+                                            ? '—'
+                                            : `${Math.round((chapter.likes / (chapter.likes + chapter.dislikes)) * 100)}%`
+                                    }}
+                                </p>
+                                <p class="text-xs text-muted-foreground">Rapport likes/dislikes</p>
                             </div>
                             <div class="rounded-lg bg-muted/40 p-3 md:col-span-2">
                                 <p class="text-xs text-muted-foreground">Temps moyen de lecture</p>

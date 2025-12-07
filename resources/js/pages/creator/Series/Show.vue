@@ -30,6 +30,9 @@ type Chapter = {
     pages: number;
     views: string;
     preview?: string;
+    likes?: number;
+    dislikes?: number;
+    rating?: number;
 };
 
 const loading = ref(true);
@@ -40,14 +43,28 @@ const currentPage = ref(1);
 const perPage = ref(6);
 
 const chapters = ref<Chapter[]>([
-    { id: 1, title: 'Chapitre 42', number: 42, status: 'scheduled', scheduledFor: '2025-12-15 10:00', pages: 28, views: '12.4K', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60' },
-    { id: 2, title: 'Chapitre 41', number: 41, status: 'published', publishedAt: '2025-12-02', pages: 30, views: '18.1K', preview: 'https://images.unsplash.com/photo-1504274066651-8d31a536b11a?auto=format&fit=crop&w=600&q=60' },
-    { id: 3, title: 'Chapitre 40', number: 40, status: 'published', publishedAt: '2025-11-25', pages: 26, views: '17.8K', preview: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=60' },
-    { id: 4, title: 'Chapitre 39', number: 39, status: 'draft', pages: 24, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60' },
-    { id: 5, title: 'Chapitre 38', number: 38, status: 'published', publishedAt: '2025-11-11', pages: 25, views: '16.2K', preview: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=60' },
-    { id: 6, title: 'Chapitre 37', number: 37, status: 'published', publishedAt: '2025-11-04', pages: 23, views: '15.9K', preview: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=60' },
-    { id: 7, title: 'Chapitre 36', number: 36, status: 'draft', pages: 21, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60' },
+    { id: 1, title: 'Chapitre 42', number: 42, status: 'scheduled', scheduledFor: '2025-12-15 10:00', pages: 28, views: '12.4K', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 820, dislikes: 42, rating: 4.6 },
+    { id: 2, title: 'Chapitre 41', number: 41, status: 'published', publishedAt: '2025-12-02', pages: 30, views: '18.1K', preview: 'https://images.unsplash.com/photo-1504274066651-8d31a536b11a?auto=format&fit=crop&w=600&q=60', likes: 1290, dislikes: 64, rating: 4.7 },
+    { id: 3, title: 'Chapitre 40', number: 40, status: 'published', publishedAt: '2025-11-25', pages: 26, views: '17.8K', preview: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=60', likes: 1175, dislikes: 71, rating: 4.6 },
+    { id: 4, title: 'Chapitre 39', number: 39, status: 'draft', pages: 24, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 0, dislikes: 0, rating: 0 },
+    { id: 5, title: 'Chapitre 38', number: 38, status: 'published', publishedAt: '2025-11-11', pages: 25, views: '16.2K', preview: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=60', likes: 980, dislikes: 58, rating: 4.5 },
+    { id: 6, title: 'Chapitre 37', number: 37, status: 'published', publishedAt: '2025-11-04', pages: 23, views: '15.9K', preview: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=60', likes: 910, dislikes: 55, rating: 4.5 },
+    { id: 7, title: 'Chapitre 36', number: 36, status: 'draft', pages: 21, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 0, dislikes: 0, rating: 0 },
 ]);
+
+const seriesStats = ref({
+    likes: 5400,
+    dislikes: 220,
+    rating: 4.7,
+});
+
+const seriesLikeRatio = computed(() =>
+    seriesStats.value.likes + seriesStats.value.dislikes === 0
+        ? '—'
+        : `${Math.round(
+              (seriesStats.value.likes / (seriesStats.value.likes + seriesStats.value.dislikes)) * 100,
+          )}%`,
+);
 
 const filteredChapters = computed(() => {
     const q = query.value.trim().toLowerCase();
@@ -407,9 +424,11 @@ const previewStyle = (src?: string) =>
                                 <p class="text-xs text-emerald-600 dark:text-emerald-300">+1.4% vs semaine</p>
                             </div>
                             <div class="rounded-lg bg-muted/40 p-3">
-                                <p class="text-xs text-muted-foreground">Taux de complétion</p>
-                                <p class="text-xl font-semibold">68%</p>
-                                <p class="text-xs text-emerald-600 dark:text-emerald-300">+0.8% vs semaine</p>
+                                <p class="text-xs text-muted-foreground">Popularité (likes)</p>
+                                <p class="text-xl font-semibold">{{ seriesLikeRatio }}</p>
+                                <p class="text-xs text-muted-foreground">
+                                    Likes {{ seriesStats.likes }} · Dislikes {{ seriesStats.dislikes }} · Note {{ seriesStats.rating }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -425,8 +444,54 @@ const previewStyle = (src?: string) =>
                             <span class="rounded-full bg-muted px-2 py-1">Statut : En cours</span>
                             <span class="rounded-full bg-muted px-2 py-1">Format : Série longue</span>
                             <span class="rounded-full bg-muted px-2 py-1">Fréquence : Hebdomadaire</span>
+                            <span class="rounded-full bg-muted px-2 py-1">Likes {{ seriesStats.likes }} · Dislikes {{ seriesStats.dislikes }}</span>
+                            <span class="rounded-full bg-muted px-2 py-1">Note {{ seriesStats.rating }}</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-sm">
+                            <button class="inline-flex items-center gap-2 rounded-md border px-3 py-2 transition hover:border-primary">
+                                Aimer la série
+                            </button>
+                            <button class="inline-flex items-center gap-2 rounded-md border px-3 py-2 transition hover:border-primary">
+                                Pas d’accord
+                            </button>
                         </div>
                     </div>
+                    </div>
+
+                    <div class="rounded-xl border bg-card p-6 shadow-sm space-y-3">
+                        <h3 class="text-lg font-semibold">Commentaires (mock)</h3>
+                        <div class="rounded-lg border bg-muted/30 p-3 text-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold">ReaderX</p>
+                                    <p class="text-xs text-muted-foreground">“Super rythme, hâte de la suite.”</p>
+                                </div>
+                                <div class="text-xs text-muted-foreground">+24 / -2</div>
+                            </div>
+                            <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Répondre</button>
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Aimer</button>
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Pas d’accord</button>
+                            </div>
+                            <div class="mt-2 rounded-md border bg-card/60 p-2 text-xs">
+                                <p class="font-semibold">Réponse auteur</p>
+                                <p class="text-muted-foreground">Merci, prochaine sortie le 15/12 !</p>
+                            </div>
+                        </div>
+                        <div class="rounded-lg border bg-muted/30 p-3 text-sm">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="font-semibold">MangaFan</p>
+                                    <p class="text-xs text-muted-foreground">“Le cliffhanger est top.”</p>
+                                </div>
+                                <div class="text-xs text-muted-foreground">+12 / -1</div>
+                            </div>
+                            <div class="mt-2 flex flex-wrap gap-2 text-xs">
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Répondre</button>
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Aimer</button>
+                                <button class="rounded-md border px-2 py-1 hover:border-primary">Pas d’accord</button>
+                            </div>
+                        </div>
                 </div>
             </div>
         </div>

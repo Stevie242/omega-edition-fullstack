@@ -18,6 +18,9 @@ type Chapter = {
     pages: number;
     views: string;
     preview?: string;
+    likes?: number;
+    dislikes?: number;
+    rating?: number;
 };
 
 const loading = ref(true);
@@ -28,14 +31,14 @@ const currentPage = ref(1);
 const perPage = ref(8);
 
 const chapters = ref<Chapter[]>([
-    { id: 1, title: 'Chapitre 42', number: 42, status: 'scheduled', scheduledFor: '2025-12-15 10:00', pages: 28, views: '12.4K', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60' },
-    { id: 2, title: 'Chapitre 41', number: 41, status: 'published', publishedAt: '2025-12-02', pages: 30, views: '18.1K', preview: 'https://images.unsplash.com/photo-1504274066651-8d31a536b11a?auto=format&fit=crop&w=600&q=60' },
-    { id: 3, title: 'Chapitre 40', number: 40, status: 'published', publishedAt: '2025-11-25', pages: 26, views: '17.8K', preview: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=60' },
-    { id: 4, title: 'Chapitre 39', number: 39, status: 'draft', pages: 24, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60' },
-    { id: 5, title: 'Chapitre 38', number: 38, status: 'published', publishedAt: '2025-11-11', pages: 25, views: '16.2K', preview: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=60' },
-    { id: 6, title: 'Chapitre 37', number: 37, status: 'published', publishedAt: '2025-11-04', pages: 23, views: '15.9K', preview: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=60' },
-    { id: 7, title: 'Chapitre 36', number: 36, status: 'draft', pages: 21, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60' },
-    { id: 8, title: 'Chapitre 35', number: 35, status: 'published', publishedAt: '2025-10-28', pages: 22, views: '14.3K', preview: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=60' },
+    { id: 1, title: 'Chapitre 42', number: 42, status: 'scheduled', scheduledFor: '2025-12-15 10:00', pages: 28, views: '12.4K', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 820, dislikes: 42, rating: 4.6 },
+    { id: 2, title: 'Chapitre 41', number: 41, status: 'published', publishedAt: '2025-12-02', pages: 30, views: '18.1K', preview: 'https://images.unsplash.com/photo-1504274066651-8d31a536b11a?auto=format&fit=crop&w=600&q=60', likes: 1290, dislikes: 64, rating: 4.7 },
+    { id: 3, title: 'Chapitre 40', number: 40, status: 'published', publishedAt: '2025-11-25', pages: 26, views: '17.8K', preview: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=60', likes: 1175, dislikes: 71, rating: 4.6 },
+    { id: 4, title: 'Chapitre 39', number: 39, status: 'draft', pages: 24, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 0, dislikes: 0, rating: 0 },
+    { id: 5, title: 'Chapitre 38', number: 38, status: 'published', publishedAt: '2025-11-11', pages: 25, views: '16.2K', preview: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=60', likes: 980, dislikes: 58, rating: 4.5 },
+    { id: 6, title: 'Chapitre 37', number: 37, status: 'published', publishedAt: '2025-11-04', pages: 23, views: '15.9K', preview: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=60', likes: 910, dislikes: 55, rating: 4.5 },
+    { id: 7, title: 'Chapitre 36', number: 36, status: 'draft', pages: 21, views: '—', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60', likes: 0, dislikes: 0, rating: 0 },
+    { id: 8, title: 'Chapitre 35', number: 35, status: 'published', publishedAt: '2025-10-28', pages: 22, views: '14.3K', preview: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=600&q=60', likes: 840, dislikes: 60, rating: 4.4 },
 ]);
 
 const filteredChapters = computed(() => {
@@ -196,25 +199,32 @@ const previewStyle = (src?: string) =>
                                 }}
                             </span>
                         </div>
-                        <div class="mt-2 text-xs text-muted-foreground space-y-1">
-                            <p>Pages : {{ chapter.pages }}</p>
-                            <p>
-                                {{
-                                    chapter.status === 'scheduled'
-                                        ? `Publication le ${chapter.scheduledFor}`
-                                        : chapter.status === 'published'
-                                          ? `Publié le ${chapter.publishedAt}`
-                                          : 'Non publié'
-                                }}
-                            </p>
-                            <p>Vues : {{ chapter.views }}</p>
-                        </div>
+                                <div class="mt-2 text-xs text-muted-foreground space-y-1">
+                                    <p>Pages : {{ chapter.pages }}</p>
+                                    <p>
+                                        {{
+                                            chapter.status === 'scheduled'
+                                                ? `Publication le ${chapter.scheduledFor}`
+                                                : chapter.status === 'published'
+                                                  ? `Publié le ${chapter.publishedAt}`
+                                                  : 'Non publié'
+                                        }}
+                                    </p>
+                                    <p>Vues : {{ chapter.views }}</p>
+                                    <p v-if="chapter.likes !== undefined">Likes : {{ chapter.likes }} · Dislikes : {{ chapter.dislikes }} · Note {{ chapter.rating ?? '—' }}</p>
+                                </div>
                         <div class="mt-3 flex flex-wrap gap-2 text-xs">
                             <Link
                                 class="rounded-md border px-3 py-1 transition hover:border-primary"
                                 :href="`/creator/chapters/${chapter.id}/edit`"
                             >
                                 Éditer
+                            </Link>
+                            <Link
+                                class="rounded-md border px-3 py-1 transition hover:border-primary"
+                                :href="`/creator/chapters/${chapter.id}`"
+                            >
+                                Détails
                             </Link>
                             <button
                                 type="button"
