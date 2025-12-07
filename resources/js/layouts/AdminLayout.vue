@@ -1,5 +1,24 @@
 <script setup lang="ts">
-import AppLayout from '@/layouts/AppLayout.vue';
+import AppContent from '@/components/AppContent.vue';
+import AppShell from '@/components/AppShell.vue';
+import AppSidebarHeader from '@/components/AppSidebarHeader.vue';
+import AdminNavUser from '@/components/AdminNavUser.vue';
+import {
+    Sidebar,
+    SidebarContent,
+    SidebarFooter,
+    SidebarGroup,
+    SidebarGroupLabel,
+    SidebarHeader,
+    SidebarMenu,
+    SidebarMenuButton,
+    SidebarMenuItem,
+} from '@/components/ui/sidebar';
+import { urlIsActive } from '@/lib/utils';
+import { type NavItem } from '@/types';
+import { Link, usePage } from '@inertiajs/vue3';
+import { Activity, LayoutGrid, Shield, Users, Zap } from 'lucide-vue-next';
+import AppLogo from '@/components/AppLogo.vue';
 
 interface Breadcrumb {
     title: string;
@@ -17,19 +36,73 @@ const props = withDefaults(defineProps<Props>(), {
     description: '',
     breadcrumbs: () => [],
 });
+
+const page = usePage();
+
+const mainNavItems: NavItem[] = [
+    { title: 'Dashboard', href: '/admin', icon: LayoutGrid },
+    { title: 'Catalogue', href: '/admin/catalog', icon: Activity },
+    { title: 'Utilisateurs', href: '/admin/users', icon: Users },
+    { title: 'Créateurs', href: '/admin/creators', icon: Shield },
+    { title: 'Modération', href: '/admin/moderation', icon: Zap },
+    { title: 'Monitoring', href: '/admin/monitoring', icon: Activity },
+];
 </script>
 
 <template>
-    <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="space-y-4 py-6 lg:py-8">
-            <div class="space-y-1">
-                <p class="text-xs uppercase text-muted-foreground tracking-wide">Admin</p>
-                <h1 class="text-2xl font-semibold leading-tight">{{ props.title }}</h1>
-                <p v-if="props.description" class="text-sm text-muted-foreground">
-                    {{ props.description }}
-                </p>
+    <AppShell variant="sidebar">
+        <Sidebar collapsible="icon" variant="inset">
+            <SidebarHeader>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton size="lg" as-child>
+                            <Link href="/admin">
+                                <AppLogo />
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarHeader>
+
+            <SidebarContent>
+                <SidebarGroup class="px-2 py-0">
+                    <SidebarGroupLabel>Admin</SidebarGroupLabel>
+                    <SidebarMenu>
+                        <SidebarMenuItem v-for="item in mainNavItems" :key="item.title">
+                            <SidebarMenuButton
+                                as-child
+                                :is-active="urlIsActive(item.href, page.url)"
+                                :tooltip="item.title"
+                            >
+                                <Link :href="item.href">
+                                    <component :is="item.icon" />
+                                    <span>{{ item.title }}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    </SidebarMenu>
+                </SidebarGroup>
+            </SidebarContent>
+
+            <SidebarFooter>
+                <AdminNavUser />
+            </SidebarFooter>
+        </Sidebar>
+
+        <AppContent variant="sidebar" class="overflow-x-hidden">
+            <AppSidebarHeader :breadcrumbs="breadcrumbs" />
+            <div class="space-y-4 py-6 lg:py-8">
+                <div class="space-y-1 px-6 md:px-4">
+                    <p class="text-xs uppercase text-muted-foreground tracking-wide">Admin</p>
+                    <h1 class="text-2xl font-semibold leading-tight">{{ props.title }}</h1>
+                    <p v-if="props.description" class="text-sm text-muted-foreground">
+                        {{ props.description }}
+                    </p>
+                </div>
+                <div class="px-6 md:px-4">
+                    <slot />
+                </div>
             </div>
-            <slot />
-        </div>
-    </AppLayout>
+        </AppContent>
+    </AppShell>
 </template>

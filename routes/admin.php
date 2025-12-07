@@ -21,4 +21,12 @@ Route::middleware(['auth', 'verified'])
 
         Route::get('moderation', [ModerationController::class, 'index'])->name('moderation');
         Route::get('monitoring', [MonitoringController::class, 'index'])->name('monitoring');
+
+        Route::prefix('settings')->as('settings.')->group(function (): void {
+            Route::get('profile', [\App\Http\Controllers\Admin\SettingsController::class, 'profile'])->name('profile');
+            Route::get('appearance', [\App\Http\Controllers\Admin\SettingsController::class, 'appearance'])->name('appearance');
+            Route::get('password', [\App\Http\Controllers\Admin\SettingsController::class, 'password'])->name('password');
+            Route::get('two-factor', [\App\Http\Controllers\Admin\SettingsController::class, 'twoFactor'])->name('two-factor');
+            Route::get('security', [\App\Http\Controllers\Admin\SettingsController::class, 'security'])->name('security');
+        });
     });
