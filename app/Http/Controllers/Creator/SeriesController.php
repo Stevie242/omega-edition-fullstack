@@ -155,10 +155,15 @@ class SeriesController extends Controller
     {
         $serie = Series::with('tags')->findOrFail($series);
 
+        $tags = Tag::orderBy('name')
+            ->pluck('name', 'id')
+            ->map(fn (string $name, string $id) => ['id' => $id, 'label' => $name])
+            ->values();
+
         return Inertia::render('creator/Series/Edit', [
             'seriesId' => $serie->id,
             'series' => $this->mapSeries($serie),
-            'tags' => Tag::orderBy('name')->get(['id', 'name', 'slug']),
+            'tags' => $tags,
         ]);
     }
 
@@ -168,43 +173,37 @@ class SeriesController extends Controller
 
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'in:manga,webtoon'],
-            'status' => ['required', 'in:ongoing,hiatus,completed'],
-            'format' => ['required', 'in:oneshot,miniseries,series'],
-            'frequency' => ['required', 'in:weekly,biweekly,monthly,irregular'],
-            'language' => ['required', 'string', 'max:8'],
+            'type' => ['required', Rule::in(['manga', 'webtoon'])],
+            'status' => ['required', Rule::in(['ongoing', 'hiatus', 'completed'])],
+            'frequency' => ['required', Rule::in(['weekly', 'biweekly', 'monthly', 'irregular'])],
+            'is_one_shot' => ['sometimes', 'boolean'],
             'synopsis' => ['nullable', 'string'],
             'cover' => ['nullable', 'image'],
             'hero' => ['nullable', 'image'],
             'tags' => ['array'],
-            'tags.*' => ['integer', 'exists:tags,id'],
+            'tags.*' => ['string', 'exists:tags,id'],
         ]);
 
         $serie->fill([
             'title' => $data['title'],
             'type' => $data['type'],
             'status' => $data['status'],
-            'format' => $data['format'],
+            'format' => !empty($data['is_one_shot']) ? 'oneshot' : 'series',
             'frequency' => $data['frequency'],
-            'language' => $data['language'],
             'synopsis' => $data['synopsis'] ?? null,
         ]);
 
         if ($request->hasFile('cover')) {
             $media->delete($serie->cover_path);
-            $serie->cover_path = $media->storeSeriesCover($request->file('cover'), $serie->slug);
+            $serie->cover_path = $media->storeImage($request->file('cover'), 'covers');
         }
 
         if ($request->hasFile('hero')) {
             $media->delete($serie->hero_path);
-            $serie->hero_path = $media->storeSeriesHero($request->file('hero'), $serie->slug);
+            $serie->hero_path = $media->storeImage($request->file('hero'), 'heroes');
         }
 
-        if (!empty($data['tags'])) {
-            $serie->tags()->sync($data['tags']);
-        } else {
-            $serie->tags()->detach();
-        }
+        $serie->tags()->sync($data['tags'] ?? []);
 
         $serie->save();
 
@@ -241,6 +240,7 @@ class SeriesController extends Controller
             'views' => $views,
             'nextRelease' => $nextRelease ? (string) $nextRelease : null,
             'tags' => $series->tags->pluck('name'),
+            'tagIds' => $series->tags->pluck('id'),
             'updatedAt' => $series->updated_at?->toDateTimeString(),
         ];
     }
