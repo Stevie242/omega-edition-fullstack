@@ -9,15 +9,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('tags', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('name');
             $table->string('slug')->unique();
             $table->timestamps();
         });
 
         Schema::create('series_tag', function (Blueprint $table) {
-            $table->foreignId('series_id')->constrained('series')->cascadeOnDelete();
-            $table->foreignId('tag_id')->constrained('tags')->cascadeOnDelete();
+            $table->foreignUuid('series_id')->constrained('series')->cascadeOnDelete();
+            $table->foreignUuid('tag_id')->constrained('tags')->cascadeOnDelete();
             $table->primary(['series_id', 'tag_id']);
         });
     }

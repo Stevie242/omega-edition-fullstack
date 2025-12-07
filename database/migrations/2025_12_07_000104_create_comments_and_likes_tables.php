@@ -9,10 +9,10 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('comments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->morphs('commentable'); // commentable_id + commentable_type
-            $table->foreignId('parent_id')->nullable()->constrained('comments')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
+            $table->uuidMorphs('commentable'); // commentable_id + commentable_type
+            $table->foreignUuid('parent_id')->nullable()->constrained('comments')->cascadeOnDelete();
             $table->text('body');
             $table->unsignedBigInteger('likes_count')->default(0);
             $table->unsignedBigInteger('dislikes_count')->default(0);
@@ -22,9 +22,9 @@ return new class extends Migration
         });
 
         Schema::create('likes', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->morphs('likeable'); // likeable_id + likeable_type
+            $table->uuid('id')->primary();
+            $table->foreignUuid('user_id')->constrained()->cascadeOnDelete();
+            $table->uuidMorphs('likeable'); // likeable_id + likeable_type
             $table->boolean('is_like')->default(true);
             $table->timestamps();
 

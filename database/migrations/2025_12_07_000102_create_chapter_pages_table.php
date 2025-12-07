@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('chapter_pages', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('chapter_id')->constrained('chapters')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('chapter_id')->constrained('chapters')->cascadeOnDelete();
             $table->string('path');
             $table->unsignedInteger('order')->default(0);
             $table->unsignedInteger('size_kb')->nullable();

@@ -9,8 +9,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('chapters', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('series_id')->constrained('series')->cascadeOnDelete();
+            $table->uuid('id')->primary();
+            $table->foreignUuid('series_id')->constrained('series')->cascadeOnDelete();
             $table->string('title');
             $table->unsignedInteger('number')->default(1);
             $table->enum('status', ['draft', 'scheduled', 'published'])->default('draft');
