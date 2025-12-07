@@ -134,8 +134,31 @@ class ChaptersController extends Controller
 
     public function show(string $chapter): Response
     {
+        $chapter = Chapter::with(['series', 'pages' => fn ($q) => $q->orderBy('order')])
+            ->findOrFail($chapter);
+
+        abort_if($chapter->series->creator_id !== Auth::id(), 403);
+
+        $disk = Storage::disk(config('filesystems.images_disk', 'images'));
+
         return Inertia::render('creator/Chapters/Show', [
-            'chapterId' => $chapter,
+            'seriesId' => $chapter->series_id,
+            'chapter' => [
+                'id' => $chapter->id,
+                'title' => $chapter->title,
+                'number' => $chapter->number,
+                'status' => $chapter->status,
+                'scheduledFor' => $chapter->scheduled_for?->toDateTimeString(),
+                'publishedAt' => $chapter->published_at?->toDateTimeString(),
+                'pagesCount' => $chapter->pages_count,
+                'views' => $chapter->views,
+                'pages' => $chapter->pages->map(fn (ChapterPage $page) => [
+                    'id' => $page->id,
+                    'order' => $page->order,
+                    'url' => url($disk->url($page->path)),
+                    'size_kb' => $page->size_kb,
+                ]),
+            ],
         ]);
     }
 

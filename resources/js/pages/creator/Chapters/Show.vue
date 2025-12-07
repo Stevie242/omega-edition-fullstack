@@ -1,102 +1,73 @@
 <script setup lang="ts">
 import CreatorLayout from '@/layouts/CreatorLayout.vue';
 import { Link } from '@inertiajs/vue3';
-import { ArrowLeft, BarChart3, CalendarClock, Clock4, Pencil, Play } from 'lucide-vue-next';
-import { computed, onMounted, ref } from 'vue';
+import { ArrowLeft, CalendarClock, Pencil, Play } from 'lucide-vue-next';
+import { computed } from 'vue';
 
-const props = defineProps<{
-    chapterId: string;
-}>();
-
-type PageItem = {
-    id: number;
-    name: string;
-    size: string;
-    preview?: string;
+type Chapter = {
+    id: string;
+    title: string;
+    number: number;
+    status: 'draft' | 'scheduled' | 'published';
+    scheduledFor?: string | null;
+    publishedAt?: string | null;
+    pagesCount: number;
+    views: number;
 };
 
-const loading = ref(true);
+type PageItem = {
+    id: string;
+    order: number;
+    url?: string | null;
+    size_kb?: number | null;
+};
 
-const chapter = ref({
-    number: 42,
-    title: 'Chapitre 42',
-    status: 'scheduled',
-    scheduledFor: '2025-12-15 10:00',
-    publishedAt: '—',
-    pagesCount: 28,
-    views: '12.4K',
-    likes: 820,
-    dislikes: 42,
-});
+const props = defineProps<{
+    seriesId: string;
+    chapter: Chapter & { pages: PageItem[] };
+}>();
 
-const pages = ref<PageItem[]>([
-    { id: 1, name: 'page-1.png', size: '420 KB', preview: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=600&q=60' },
-    { id: 2, name: 'page-2.png', size: '388 KB', preview: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=600&q=60' },
-    { id: 3, name: 'page-3.png', size: '401 KB', preview: 'https://images.unsplash.com/photo-1504274066651-8d31a536b11a?auto=format&fit=crop&w=600&q=60' },
-]);
-
-const previewStyle = (src?: string) =>
+const previewStyle = (src?: string | null) =>
     src
         ? { backgroundImage: `url(${src})` }
         : { backgroundImage: 'linear-gradient(135deg, #1f2937 0%, #0ea5e9 100%)' };
 
 const statusLabel = computed(() => {
-    if (chapter.value.status === 'published') return 'Publié';
-    if (chapter.value.status === 'scheduled') return 'Programmé';
+    if (props.chapter.status === 'published') return 'Publié';
+    if (props.chapter.status === 'scheduled') return 'Programmé';
     return 'Brouillon';
 });
 
 const statusClass = computed(() => {
-    if (chapter.value.status === 'published')
+    if (props.chapter.status === 'published')
         return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-200';
-    if (chapter.value.status === 'scheduled')
+    if (props.chapter.status === 'scheduled')
         return 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-200';
     return 'bg-slate-200 text-slate-800 dark:bg-slate-800 dark:text-slate-200';
-});
-
-onMounted(() => {
-    setTimeout(() => (loading.value = false), 500);
 });
 </script>
 
 <template>
     <CreatorLayout
         title="Détail chapitre"
-        :description="`Aperçu et actions du chapitre #${props.chapterId}`"
+        :description="`Aperçu et actions du chapitre #${chapter.id}`"
         :breadcrumbs="[
-            { title: 'Chapitres', href: '/creator/series' },
-            { title: `Chapitre #${props.chapterId}` },
+            { title: 'Séries', href: '/creator/series' },
+            { title: seriesId, href: `/creator/series/${seriesId}` },
+            { title: 'Chapitres', href: `/creator/series/${seriesId}/chapters` },
+            { title: `Chapitre #${chapter.id}` },
         ]"
     >
         <div class="space-y-4">
             <Link
                 class="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm hover:border-primary hover:text-primary"
-                href="/creator/series"
+                :href="`/creator/series/${seriesId}/chapters`"
             >
                 <ArrowLeft class="h-4 w-4" />
                 Retour
             </Link>
 
-            <div v-if="loading" class="space-y-4">
-                <div class="h-10 w-64 animate-pulse rounded bg-muted" />
-                <div class="grid gap-4 lg:grid-cols-[1.5fr_1fr]">
-                    <div class="space-y-3">
-                        <div class="h-48 w-full animate-pulse rounded bg-muted" />
-                        <div class="grid gap-3 md:grid-cols-3">
-                            <div v-for="n in 3" :key="n" class="h-20 w-full animate-pulse rounded bg-muted" />
-                        </div>
-                    </div>
-                    <div class="space-y-3">
-                        <div class="h-20 w-full animate-pulse rounded bg-muted" />
-                        <div class="h-16 w-full animate-pulse rounded bg-muted" />
-                        <div class="grid gap-2 md:grid-cols-2">
-                            <div v-for="n in 2" :key="n" class="h-16 w-full animate-pulse rounded bg-muted" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div v-else class="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
+            <div class="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
                 <div class="space-y-4">
                     <div class="rounded-xl border bg-card p-6 shadow-sm space-y-3">
                         <div class="flex items-start justify-between gap-3">
@@ -111,7 +82,6 @@ onMounted(() => {
                         <div class="flex flex-wrap gap-2 text-xs text-muted-foreground">
                             <span class="rounded-full bg-muted px-2 py-1">Pages : {{ chapter.pagesCount }}</span>
                             <span class="rounded-full bg-muted px-2 py-1">Vues : {{ chapter.views }}</span>
-                            <span class="rounded-full bg-muted px-2 py-1">Likes : {{ chapter.likes }} · Dislikes : {{ chapter.dislikes }}</span>
                             <span class="rounded-full bg-muted px-2 py-1">
                                 {{
                                     chapter.status === 'scheduled'
@@ -124,7 +94,7 @@ onMounted(() => {
                         </div>
                         <div class="flex flex-wrap gap-3 text-sm">
                             <Link
-                                :href="`/creator/chapters/${props.chapterId}/edit`"
+                                :href="`/creator/chapters/${chapter.id}/edit`"
                                 class="inline-flex items-center gap-2 rounded-md border px-3 py-2 transition hover:border-primary"
                             >
                                 <Pencil class="h-4 w-4" />
@@ -149,19 +119,24 @@ onMounted(() => {
 
                     <div class="rounded-xl border bg-card p-6 shadow-sm">
                         <h2 class="text-lg font-semibold mb-3">Pages</h2>
-                        <div class="flex flex-col gap-3">
+                        <div v-if="!chapter.pages.length" class="rounded-lg border border-dashed bg-muted/30 p-3 text-sm text-muted-foreground">
+                            Aucune page trouvée pour ce chapitre.
+                        </div>
+                        <div v-else class="flex flex-col gap-3">
                             <div
-                                v-for="page in pages"
+                                v-for="page in chapter.pages"
                                 :key="page.id"
                                 class="flex items-center gap-3 rounded-lg border bg-card/80 p-3"
                             >
                                 <div
                                     class="h-24 w-20 shrink-0 overflow-hidden rounded-md bg-cover bg-center"
-                                    :style="previewStyle(page.preview)"
+                                    :style="previewStyle(page.url)"
                                 ></div>
                                 <div class="flex flex-1 flex-col gap-1 text-sm">
-                                    <p class="font-semibold">{{ page.name }}</p>
-                                    <p class="text-xs text-muted-foreground">{{ page.size }}</p>
+                                    <p class="font-semibold">Page {{ page.order + 1 }}</p>
+                                    <p class="text-xs text-muted-foreground" v-if="page.size_kb">
+                                        {{ page.size_kb }} KB
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -215,13 +190,7 @@ onMounted(() => {
                             </div>
                             <div class="rounded-lg bg-muted/40 p-3">
                                 <p class="text-xs text-muted-foreground">Likes ratio</p>
-                                <p class="text-xl font-semibold">
-                                    {{
-                                        chapter.likes + chapter.dislikes === 0
-                                            ? '—'
-                                            : `${Math.round((chapter.likes / (chapter.likes + chapter.dislikes)) * 100)}%`
-                                    }}
-                                </p>
+                                <p class="text-xl font-semibold">—</p>
                                 <p class="text-xs text-muted-foreground">Rapport likes/dislikes</p>
                             </div>
                             <div class="rounded-lg bg-muted/40 p-3 md:col-span-2">
