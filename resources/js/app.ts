@@ -7,6 +7,7 @@ import { createApp, h } from 'vue';
 import { createPinia } from 'pinia';
 import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
+import ToastService from 'primevue/toastservice';
 import { initializeTheme } from './composables/useAppearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
@@ -30,6 +31,7 @@ createInertiaApp({
                 },
                 ripple: true,
             })
+            .use(ToastService)
             .mount(el);
     },
     progress: {
