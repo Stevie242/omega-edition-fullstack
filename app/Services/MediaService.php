@@ -13,6 +13,12 @@ class MediaService
         return Storage::disk(config('filesystems.images_disk', 'images'));
     }
 
+    public function storeImage(UploadedFile $file, string $folder): string
+    {
+        $filename = Str::random(20).'.'.$file->getClientOriginalExtension();
+        return $this->disk()->putFileAs($folder, $file, $filename);
+    }
+
     public function storeSeriesCover(UploadedFile $file, string $seriesSlug): string
     {
         $filename = 'cover-'.Str::random(8).'.'.$file->getClientOriginalExtension();

@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -50,8 +51,13 @@ class SeriesController extends Controller
 
     public function create(): Response
     {
+        $tags = Tag::orderBy('name')
+            ->pluck('name', 'id')
+            ->map(fn (string $name, string $id) => ['id' => $id, 'label' => $name])
+            ->values();
+
         return Inertia::render('creator/Series/Create', [
-            'tags' => Tag::query()->orderBy('name')->get(['id', 'name', 'slug']),
+            'tags' => $tags,
         ]);
     }
 
@@ -59,16 +65,15 @@ class SeriesController extends Controller
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'in:manga,webtoon'],
-            'status' => ['required', 'in:ongoing,hiatus,completed'],
-            'format' => ['required', 'in:oneshot,miniseries,series'],
-            'frequency' => ['required', 'in:weekly,biweekly,monthly,irregular'],
-            'language' => ['required', 'string', 'max:8'],
+            'type' => ['required', Rule::in(['manga', 'webtoon'])],
+            'status' => ['required', Rule::in(['ongoing', 'hiatus', 'completed'])],
+            'frequency' => ['required', Rule::in(['weekly', 'biweekly', 'monthly', 'irregular'])],
+            'is_one_shot' => ['sometimes', 'boolean'],
             'synopsis' => ['nullable', 'string'],
             'cover' => ['nullable', 'image'],
             'hero' => ['nullable', 'image'],
             'tags' => ['array'],
-            'tags.*' => ['integer', 'exists:tags,id'],
+            'tags.*' => ['string', 'exists:tags,id'],
         ]);
 
         $slug = Str::slug($data['title']);
@@ -82,27 +87,24 @@ class SeriesController extends Controller
             'slug' => $slug,
             'type' => $data['type'],
             'status' => $data['status'],
-            'format' => $data['format'],
+            'format' => !empty($data['is_one_shot']) ? 'oneshot' : 'series',
             'frequency' => $data['frequency'],
-            'language' => $data['language'],
             'synopsis' => $data['synopsis'] ?? null,
         ]);
 
         if ($request->hasFile('cover')) {
-            $series->cover_path = $media->storeSeriesCover($request->file('cover'), $series->slug);
+            $series->cover_path = $media->storeImage($request->file('cover'), 'covers');
         }
 
         if ($request->hasFile('hero')) {
-            $series->hero_path = $media->storeSeriesHero($request->file('hero'), $series->slug);
+            $series->hero_path = $media->storeImage($request->file('hero'), 'heroes');
         }
 
-        if (!empty($data['tags'])) {
-            $series->tags()->sync($data['tags']);
-        }
+        $series->tags()->sync($data['tags'] ?? []);
 
         $series->save();
 
-        return redirect()->route('creator.series.edit', $series->id)->with('success', 'Série créée.');
+        return redirect('/creator/series')->with('success', 'Serie creee.');
     }
 
     public function show(string $series): Response
@@ -204,7 +206,7 @@ class SeriesController extends Controller
 
         $serie->save();
 
-        return redirect()->route('creator.series.edit', $serie->id)->with('success', 'Série mise à jour.');
+        return redirect()->route('creator.series.edit', $serie->id)->with('success', 'Serie mise a jour.');
     }
 
     private function mapSeries(Series $series): array
