@@ -447,14 +447,6 @@ const previewStyle = (src?: string) =>
                             <span class="rounded-full bg-muted px-2 py-1">Likes {{ seriesStats.likes }} · Dislikes {{ seriesStats.dislikes }}</span>
                             <span class="rounded-full bg-muted px-2 py-1">Note {{ seriesStats.rating }}</span>
                         </div>
-                        <div class="flex flex-wrap gap-2 text-sm">
-                            <button class="inline-flex items-center gap-2 rounded-md border px-3 py-2 transition hover:border-primary">
-                                Aimer la série
-                            </button>
-                            <button class="inline-flex items-center gap-2 rounded-md border px-3 py-2 transition hover:border-primary">
-                                Pas d’accord
-                            </button>
-                        </div>
                     </div>
                     </div>
 

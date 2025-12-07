@@ -134,18 +134,6 @@ onMounted(() => {
                                 type="button"
                                 class="inline-flex items-center gap-2 rounded-md border px-3 py-2 transition hover:border-primary"
                             >
-                                Aimer
-                            </button>
-                            <button
-                                type="button"
-                                class="inline-flex items-center gap-2 rounded-md border px-3 py-2 transition hover:border-primary"
-                            >
-                                Pas d’accord
-                            </button>
-                            <button
-                                type="button"
-                                class="inline-flex items-center gap-2 rounded-md border px-3 py-2 transition hover:border-primary"
-                            >
                                 <CalendarClock class="h-4 w-4" />
                                 Programmer
                             </button>
