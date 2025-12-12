@@ -1,6 +1,8 @@
 import { onMounted, ref } from 'vue';
+import { router, usePage } from '@inertiajs/vue3';
+import type { CurrencyCode } from '@/lib/currency';
 
-type Appearance = 'light' | 'dark' | 'system';
+export type Appearance = 'light' | 'dark' | 'system';
 
 export function updateTheme(value: Appearance) {
     if (typeof window === 'undefined') {
@@ -40,6 +42,15 @@ const mediaQuery = () => {
     return window.matchMedia('(prefers-color-scheme: dark)');
 };
 
+const handleSystemThemeChange = () => {
+    const currentAppearance = getStoredAppearance();
+
+    updateTheme(currentAppearance || 'system');
+};
+
+const appearance = ref<Appearance>('system');
+const currency = ref<CurrencyCode>('XAF');
+
 const getStoredAppearance = () => {
     if (typeof window === 'undefined') {
         return null;
@@ -48,52 +59,73 @@ const getStoredAppearance = () => {
     return localStorage.getItem('appearance') as Appearance | null;
 };
 
-const handleSystemThemeChange = () => {
-    const currentAppearance = getStoredAppearance();
+export function resolveAppearance(preferenceTheme?: Appearance | null) {
+    // Order: server preference -> localStorage -> system
+    return preferenceTheme || getStoredAppearance() || 'system';
+}
 
-    updateTheme(currentAppearance || 'system');
-};
-
-export function initializeTheme() {
+export function initializeTheme(preferenceTheme?: Appearance | null) {
     if (typeof window === 'undefined') {
         return;
     }
 
-    // Initialize theme from saved preference or default to system...
-    const savedAppearance = getStoredAppearance();
-    updateTheme(savedAppearance || 'system');
+    const initialAppearance = resolveAppearance(preferenceTheme);
+    updateTheme(initialAppearance);
 
     // Set up system theme change listener...
     mediaQuery()?.addEventListener('change', handleSystemThemeChange);
 }
 
-const appearance = ref<Appearance>('system');
-
-export function useAppearance() {
+export function useAppearance(
+    initialPreference?: { theme?: Appearance | null; currency?: CurrencyCode | null } | null,
+) {
+    const page = usePage();
     onMounted(() => {
-        const savedAppearance = localStorage.getItem(
-            'appearance',
-        ) as Appearance | null;
-
-        if (savedAppearance) {
-            appearance.value = savedAppearance;
-        }
+        const serverTheme = (page.props.preference as any)?.theme as Appearance | undefined;
+        const serverCurrency = (page.props.preference as any)?.currency as CurrencyCode | undefined;
+        const savedAppearance = resolveAppearance(initialPreference?.theme ?? serverTheme ?? null);
+        appearance.value = savedAppearance;
+        currency.value = initialPreference?.currency ?? serverCurrency ?? currency.value;
+        updateTheme(savedAppearance);
     });
 
     function updateAppearance(value: Appearance) {
         appearance.value = value;
 
-        // Store in localStorage for client-side persistence...
         localStorage.setItem('appearance', value);
-
-        // Store in cookie for SSR...
         setCookie('appearance', value);
 
         updateTheme(value);
+        syncPreference({ theme: value, currency: currency.value });
+    }
+
+    function updateCurrency(value: CurrencyCode) {
+        currency.value = value;
+        syncPreference({ theme: appearance.value, currency: value });
+    }
+
+    function syncPreference(payload: { theme: Appearance; currency: CurrencyCode }) {
+        const user = (page.props.auth as any)?.user;
+        if (!user) return;
+
+        router.put(
+            '/settings/preferences',
+            {
+                theme: payload.theme,
+                currency: payload.currency,
+                data: null,
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+            },
+        );
     }
 
     return {
         appearance,
+        currency,
         updateAppearance,
+        updateCurrency,
     };
 }
