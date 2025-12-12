@@ -38,6 +38,10 @@ class ProfileCreator extends Model
         'is_completed',
     ];
 
+    protected $casts = [
+        'is_completed' => 'boolean',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
