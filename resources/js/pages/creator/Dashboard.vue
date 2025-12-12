@@ -18,7 +18,7 @@ const props = defineProps<{
     upcoming: Array<{ series: string; chapter: string; date: string }>;
     alerts: Array<{ type: 'info' | 'warning' | string; message: string }>;
     topSeries: Array<{ title: string; reads: number; trend: number }>;
-    recentPayouts: Array<{ ref: string; amount_xaf: number; date: string; status: string }>;
+    recentPayouts: Array<{ ref: string; amount_xaf: number; date: string | null; status: string }>;
 }>();
 
 const page = usePage();
@@ -38,7 +38,7 @@ const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currenc
                     <Card>
                         <CardHeader class="flex flex-row items-center justify-between">
                             <div>
-                                <CardDescription>Lectures 30 derniers jours</CardDescription>
+                                <CardDescription>Lectures ({{ new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) }})</CardDescription>
                                 <CardTitle>{{ props.summary.reads.toLocaleString('fr-FR') }}</CardTitle>
                             </div>
                             <Badge :variant="props.summary.change_reads_pct >= 0 ? 'secondary' : 'outline'">
@@ -49,7 +49,7 @@ const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currenc
                     <Card>
                         <CardHeader class="flex flex-row items-center justify-between">
                             <div>
-                                <CardDescription>Revenus nets (XAF)</CardDescription>
+                                <CardDescription>Revenus nets</CardDescription>
                                 <CardTitle>{{ formatAmount(props.summary.net_revenue_xaf) }}</CardTitle>
                             </div>
                             <Badge :variant="props.summary.change_revenue_pct >= 0 ? 'secondary' : 'outline'">
@@ -57,7 +57,7 @@ const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currenc
                             </Badge>
                         </CardHeader>
                         <CardContent class="text-sm text-muted-foreground">
-                            Avant reversement, après commission plateforme et taxes.
+                            Après commission plateforme et taxes, avant reversement.
                         </CardContent>
                     </Card>
                     <Card>
@@ -154,6 +154,9 @@ const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currenc
                                 {{ serie.trend }} %
                             </Badge>
                         </div>
+                        <p v-if="props.topSeries.length === 0" class="text-sm text-muted-foreground">
+                            Pas encore de données pour classer vos séries.
+                        </p>
                     </CardContent>
                 </Card>
 
@@ -178,10 +181,13 @@ const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currenc
                                 <p class="text-muted-foreground text-xs">{{ item.ref }}</p>
                             </div>
                             <div class="text-right text-muted-foreground">
-                                <p>{{ new Date(item.date).toLocaleDateString('fr-FR') }}</p>
+                                <p>{{ item.date ? new Date(item.date).toLocaleDateString('fr-FR') : '—' }}</p>
                                 <Badge :variant="item.status === 'paid' ? 'secondary' : 'outline'"> {{ item.status }} </Badge>
                             </div>
                         </div>
+                        <p v-if="props.recentPayouts.length === 0" class="text-sm text-muted-foreground">
+                            Aucun reversement enregistré pour l’instant.
+                        </p>
                     </CardContent>
                 </Card>
             </div>
