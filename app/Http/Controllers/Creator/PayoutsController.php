@@ -12,6 +12,7 @@ class PayoutsController extends Controller
     public function index(Request $request): Response
     {
         $user = $request->user();
+        $user->load('taxProfile');
 
         $accounts = $user->payoutAccounts()
             ->select(['id', 'type', 'label', 'holder_first_name', 'holder_last_name', 'details', 'is_default', 'status'])
@@ -27,9 +28,12 @@ class PayoutsController extends Controller
             ->latest()
             ->get(['id', 'number', 'period_label', 'amount_xaf', 'status', 'payment_method', 'paid_at']);
 
+        $taxWithheld = (int) $user->payouts()->sum('tax_withheld_xaf');
+
         $summary = [
             'gross' => (int) $user->payouts()->sum('gross_amount_xaf'),
             'platform' => (int) $user->payouts()->sum('platform_fee_xaf'),
+            'tax' => $taxWithheld,
             'net' => (int) $user->payouts()->sum('net_amount_xaf'),
             'paid' => (int) $user->payouts()->where('status', 'paid')->sum('amount_xaf'),
             'pending' => (int) $user->payouts()->whereIn('status', ['pending', 'processing'])->sum('amount_xaf'),
@@ -40,6 +44,7 @@ class PayoutsController extends Controller
             'payouts' => $payouts,
             'invoices' => $invoices,
             'summary' => $summary,
+            'taxProfile' => $user->taxProfile,
         ]);
     }
 }

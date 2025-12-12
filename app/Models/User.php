@@ -12,6 +12,7 @@ use App\Models\UserPreference;
 use App\Models\PayoutAccount;
 use App\Models\Payout;
 use App\Models\Invoice;
+use App\Models\TaxProfile;
 
 class User extends Authenticatable
 {
@@ -97,5 +98,10 @@ class User extends Authenticatable
     public function invoices()
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function taxProfile()
+    {
+        return $this->hasOne(TaxProfile::class);
     }
 }

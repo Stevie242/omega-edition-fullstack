@@ -30,6 +30,7 @@ const props = defineProps<{
     summary: {
         gross: number;
         platform: number;
+        tax?: number;
         net: number;
         paid: number;
         pending: number;
@@ -62,6 +63,13 @@ const props = defineProps<{
         is_default: boolean;
         status: string;
     }>;
+    taxProfile?: {
+        id: string;
+        mode: 'self' | 'withheld';
+        country?: string | null;
+        tax_id?: string | null;
+        tax_rate_bps?: number | null;
+    } | null;
 }>();
 
 const tabs = [
@@ -132,6 +140,11 @@ const accountsRows = computed(() =>
 );
 
 const summary = computed(() => props.summary);
+const taxModeLabel = computed(() =>
+    props.taxProfile?.mode === 'withheld'
+        ? 'Retenue par la plateforme'
+        : 'Autogéré par le créateur',
+);
 
 const plan = {
     name: 'Creator Pro',
@@ -230,6 +243,15 @@ const disputeForm = ref({
                         </CardHeader>
                         <CardContent class="text-sm text-muted-foreground">
                             Après commission, avant reversements.
+                        </CardContent>
+                    </Card>
+                    <Card v-if="summary.tax !== undefined">
+                        <CardHeader>
+                            <CardDescription>Taxe retenue</CardDescription>
+                            <CardTitle>{{ formatAmount(summary.tax) }}</CardTitle>
+                        </CardHeader>
+                        <CardContent class="text-sm text-muted-foreground">
+                            {{ taxModeLabel }}.
                         </CardContent>
                     </Card>
                     <Card>
