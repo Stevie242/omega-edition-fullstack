@@ -9,8 +9,21 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { formatFromXaf, type CurrencyCode } from '@/lib/currency';
 import { ref } from 'vue';
+
+type PayoutMethod = 'bank' | 'card' | 'mobile_money';
 
 const tabs = [
     { id: 'revenus', label: 'Revenus & reversements' },
@@ -64,6 +77,7 @@ const payouts = [
         amount: 620000,
         status: 'versé',
         proof: 'Voir',
+        account: 'Banque - UBA',
     },
     {
         date: '30 nov 2024',
@@ -71,6 +85,7 @@ const payouts = [
         amount: 840000,
         status: 'versé',
         proof: 'Voir',
+        account: 'Banque - UBA',
     },
     {
         date: '02 nov 2024',
@@ -78,6 +93,7 @@ const payouts = [
         amount: 1160000,
         status: 'versé',
         proof: 'Voir',
+        account: 'Mobile Money - MTN',
     },
 ];
 
@@ -120,6 +136,58 @@ const statusVariant = (status: string) => {
 };
 
 const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currency.value, locale);
+
+const setTab = (id: typeof tabs[number]['id']) => {
+    activeTab.value = id;
+};
+
+const showAddAccount = ref(false);
+const showDispute = ref(false);
+
+const payoutAccounts = ref<
+    Array<{
+        id: string;
+        type: PayoutMethod;
+        label: string;
+        details: string;
+        holder: string;
+        isDefault: boolean;
+        status: 'validé' | 'en attente';
+    }>
+>([
+    {
+        id: 'acc-1',
+        type: 'bank',
+        label: 'Banque - UBA',
+        details: 'IBAN XAF •••• 8712',
+        holder: 'Koumba Diallo',
+        isDefault: true,
+        status: 'validé',
+    },
+    {
+        id: 'acc-2',
+        type: 'mobile_money',
+        label: 'Mobile Money - MTN',
+        details: '077 ** ** 12',
+        holder: 'Koumba Diallo',
+        isDefault: false,
+        status: 'en attente',
+    },
+]);
+
+const addAccountForm = ref({
+    type: 'bank' as PayoutMethod,
+    label: '',
+    details: '',
+    firstName: '',
+    lastName: '',
+    default: false,
+});
+
+const disputeForm = ref({
+    reference: '',
+    message: '',
+});
 </script>
 
 <template>
@@ -201,7 +269,7 @@ const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currenc
                         </CardHeader>
                         <CardContent class="flex items-center justify-between text-sm text-muted-foreground">
                             <span>Versement prévu à la prochaine fenêtre.</span>
-                            <Button variant="outline" size="sm">Exporter le relevé</Button>
+                            <Button variant="outline" size="sm" @click="setTab('revenus')">Exporter le relevé</Button>
                         </CardContent>
                     </Card>
                 </div>
@@ -222,6 +290,7 @@ const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currenc
                                         <th class="pb-2 font-medium">Date</th>
                                         <th class="pb-2 font-medium">Réf.</th>
                                         <th class="pb-2 font-medium">Montant</th>
+                                        <th class="pb-2 font-medium">Compte</th>
                                         <th class="pb-2 font-medium">Statut</th>
                                         <th class="pb-2 font-medium">Preuve</th>
                                     </tr>
@@ -233,11 +302,14 @@ const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currenc
                                         <td class="py-3 font-medium text-foreground">
                                             {{ formatAmount(item.amount) }}
                                         </td>
+                                        <td class="py-3 text-muted-foreground">{{ item.account }}</td>
                                         <td class="py-3">
                                             <Badge :variant="statusVariant(item.status)">{{ item.status }}</Badge>
                                         </td>
                                         <td class="py-3">
-                                            <Button size="sm" variant="ghost">{{ item.proof }}</Button>
+                                            <Button size="sm" variant="ghost">
+                                                {{ item.proof }}
+                                            </Button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -288,7 +360,9 @@ const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currenc
                                         <td class="py-3 text-right">
                                             <div class="flex justify-end gap-2">
                                                 <Button size="sm" variant="outline">PDF</Button>
-                                                <Button size="sm" variant="ghost">Duplicata</Button>
+                                                <Button size="sm" variant="ghost" @click="showDispute = true">
+                                                    Litige
+                                                </Button>
                                             </div>
                                         </td>
                                     </tr>
@@ -331,7 +405,7 @@ const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currenc
                             <div class="flex flex-wrap gap-2 pt-2">
                                 <Button size="sm">Changer de plan</Button>
                                 <Button size="sm" variant="outline">Mettre à jour le moyen de paiement</Button>
-                                <Button size="sm" variant="ghost">Voir l’historique</Button>
+                                <Button size="sm" variant="ghost" @click="setTab('factures')">Voir l’historique</Button>
                             </div>
                         </CardContent>
                     </Card>
@@ -340,21 +414,172 @@ const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currenc
                             <CardTitle>Coordonnées de versement</CardTitle>
                             <CardDescription>Compte bancaire/Mobile Money à vérifier.</CardDescription>
                         </CardHeader>
-                        <CardContent class="space-y-3 text-sm">
-                            <p class="text-muted-foreground">
-                                IBAN / Mobile Money non renseigné. Ajoutez un compte pour recevoir vos virements.
-                            </p>
+                        <CardContent class="space-y-4 text-sm">
+                            <div class="space-y-3">
+                                <div
+                                    v-for="account in payoutAccounts"
+                                    :key="account.id"
+                                    class="flex items-start justify-between gap-3 rounded-md border bg-muted/40 px-3 py-2"
+                                >
+                                    <div class="space-y-1">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium text-foreground">{{ account.label }}</span>
+                                    <Badge variant="outline">{{ account.type }}</Badge>
+                                    <Badge
+                                        v-if="account.isDefault"
+                                                variant="secondary"
+                                            >
+                                                Défaut
+                                            </Badge>
+                                            <Badge
+                                                v-else
+                                                :variant="account.status === 'validé' ? 'secondary' : 'outline'"
+                                            >
+                                            {{ account.status }}
+                                        </Badge>
+                                    </div>
+                                    <p class="text-muted-foreground text-xs">{{ account.details }}</p>
+                                    <p class="text-muted-foreground text-xs">Titulaire : {{ account.holder }}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <Button size="sm" variant="outline">Définir défaut</Button>
+                                    <Button size="sm" variant="ghost">Supprimer</Button>
+                                </div>
+                                </div>
+                            </div>
                             <div class="flex gap-2">
-                                <Button size="sm">Ajouter un compte</Button>
-                                <Button size="sm" variant="outline">Déclarer un litige</Button>
+                                <Button size="sm" @click="showAddAccount = true">Ajouter un compte</Button>
+                                <Button size="sm" variant="outline" @click="showDispute = true">Déclarer un litige</Button>
                             </div>
                             <p class="text-xs text-muted-foreground">
-                                Les reversements sont effectués après vérification KYC et atteinte du seuil minimal.
+                                Plusieurs comptes peuvent être ajoutés. Les reversements partent sur le compte par défaut
+                                validé. Les comptes “en attente” nécessitent une vérification KYC.
                             </p>
                         </CardContent>
                     </Card>
                 </div>
             </section>
         </div>
+
+        <Dialog :open="showAddAccount" @update:open="showAddAccount = $event">
+            <DialogContent class="sm:max-w-lg">
+                <DialogHeader class="space-y-2">
+                    <DialogTitle>Ajouter un compte de versement</DialogTitle>
+                    <DialogDescription>
+                        Banque, carte ou Mobile Money. Ce compte pourra être défini comme défaut pour les prochains versements.
+                    </DialogDescription>
+                </DialogHeader>
+                <div class="space-y-4 text-sm">
+                    <div class="grid gap-2">
+                        <Label for="type">Type</Label>
+                        <select
+                            id="type"
+                            v-model="addAccountForm.type"
+                            class="h-10 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+                        >
+                            <option value="bank">Compte bancaire (IBAN XAF)</option>
+                            <option value="card">Carte bancaire</option>
+                            <option value="mobile_money">Mobile Money</option>
+                        </select>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="label">Libellé</Label>
+                        <Input id="label" v-model="addAccountForm.label" placeholder="Ex: Banque - UBA" />
+                    </div>
+                    <div class="grid gap-2 md:grid-cols-2">
+                        <div class="grid gap-2">
+                            <Label for="firstName">Prénom du titulaire</Label>
+                            <Input id="firstName" v-model="addAccountForm.firstName" placeholder="Prénom" />
+                        </div>
+                        <div class="grid gap-2">
+                            <Label for="lastName">Nom du titulaire</Label>
+                            <Input id="lastName" v-model="addAccountForm.lastName" placeholder="Nom" />
+                        </div>
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="details">Détails</Label>
+                        <Input
+                            id="details"
+                            v-model="addAccountForm.details"
+                            placeholder="IBAN / Numéro Mobile Money / 4 derniers digits"
+                        />
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <input
+                            id="default"
+                            v-model="addAccountForm.default"
+                            type="checkbox"
+                            class="h-4 w-4 rounded border border-input text-primary"
+                        />
+                        <Label for="default" class="text-sm text-foreground">Définir comme compte par défaut</Label>
+                    </div>
+                </div>
+                <DialogFooter class="gap-2">
+                    <DialogClose as-child>
+                        <Button variant="outline" @click="addAccountForm = { type: 'bank', label: '', details: '', default: false }">
+                            Annuler
+                        </Button>
+                    </DialogClose>
+                    <Button
+                        @click="
+                            () => {
+                                // Mock save
+                                showAddAccount = false;
+                                addAccountForm = { type: 'bank', label: '', details: '', firstName: '', lastName: '', default: false };
+                            }
+                        "
+                    >
+                        Ajouter
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+
+        <Dialog :open="showDispute" @update:open="showDispute = $event">
+            <DialogContent class="sm:max-w-lg">
+                <DialogHeader class="space-y-2">
+                    <DialogTitle>Déclarer un litige</DialogTitle>
+                    <DialogDescription>
+                        Signalez un souci de paiement ou de facture. Un ticket sera créé auprès du support.
+                    </DialogDescription>
+                </DialogHeader>
+                <div class="space-y-4 text-sm">
+                    <div class="grid gap-2">
+                        <Label for="reference">Référence (virement ou facture)</Label>
+                        <Input
+                            id="reference"
+                            v-model="disputeForm.reference"
+                            placeholder="Ex: TRF-2024-123 ou FAC-2025-001"
+                        />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="message">Message</Label>
+                        <textarea
+                            id="message"
+                            v-model="disputeForm.message"
+                            rows="4"
+                            class="rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground"
+                            placeholder="Décrivez le problème rencontré (montant, retard, statut, etc.)"
+                        />
+                    </div>
+                </div>
+                <DialogFooter class="gap-2">
+                    <DialogClose as-child>
+                        <Button variant="outline" @click="disputeForm = { reference: '', message: '' }">Annuler</Button>
+                    </DialogClose>
+                    <Button
+                        @click="
+                            () => {
+                                // Mock submit
+                                showDispute = false;
+                                disputeForm = { reference: '', message: '' };
+                            }
+                        "
+                    >
+                        Envoyer
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     </CreatorLayout>
 </template>
