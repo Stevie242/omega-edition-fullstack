@@ -15,6 +15,7 @@ class RedirectLoginResponse implements LoginResponseContract
 
         $redirect = match (true) {
             $user?->role === 'creator' && ($user->creatorProfile?->is_completed !== true) => route('creator.onboarding'),
+            $user?->role === 'reader' && ($user->readerProfile?->is_completed !== true) => route('reader.onboarding'),
             $user?->role === 'admin' => route('admin.dashboard'),
             $user?->role === 'creator' => route('creator.dashboard'),
             default => route('reader.dashboard'),

@@ -26,19 +26,34 @@ import { Form, Head } from '@inertiajs/vue3';
         >
             <input type="hidden" name="role" value="reader" />
             <div class="grid gap-6">
-                <div class="grid gap-2">
-                    <Label for="name">Name</Label>
-                    <Input
-                        id="name"
-                        type="text"
-                        required
-                        autofocus
-                        :tabindex="1"
-                        autocomplete="name"
-                        name="name"
-                        placeholder="Full name"
-                    />
-                    <InputError :message="errors.name" />
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div class="grid gap-2">
+                        <Label for="first_name">Prénom</Label>
+                        <Input
+                            id="first_name"
+                            type="text"
+                            required
+                            autofocus
+                            :tabindex="1"
+                            autocomplete="given-name"
+                            name="first_name"
+                            placeholder="Prénom"
+                        />
+                        <InputError :message="errors.first_name" />
+                    </div>
+                    <div class="grid gap-2">
+                        <Label for="last_name">Nom</Label>
+                        <Input
+                            id="last_name"
+                            type="text"
+                            required
+                            :tabindex="2"
+                            autocomplete="family-name"
+                            name="last_name"
+                            placeholder="Nom"
+                        />
+                        <InputError :message="errors.last_name" />
+                    </div>
                 </div>
 
                 <div class="grid gap-2">
@@ -47,7 +62,7 @@ import { Form, Head } from '@inertiajs/vue3';
                         id="email"
                         type="email"
                         required
-                        :tabindex="2"
+                        :tabindex="3"
                         autocomplete="email"
                         name="email"
                         placeholder="email@example.com"
@@ -61,7 +76,7 @@ import { Form, Head } from '@inertiajs/vue3';
                         id="password"
                         type="password"
                         required
-                        :tabindex="3"
+                        :tabindex="4"
                         autocomplete="new-password"
                         name="password"
                         placeholder="Password"
@@ -75,7 +90,7 @@ import { Form, Head } from '@inertiajs/vue3';
                         id="password_confirmation"
                         type="password"
                         required
-                        :tabindex="4"
+                        :tabindex="5"
                         autocomplete="new-password"
                         name="password_confirmation"
                         placeholder="Confirm password"

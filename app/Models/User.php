@@ -13,6 +13,7 @@ use App\Models\PayoutAccount;
 use App\Models\Payout;
 use App\Models\Invoice;
 use App\Models\TaxProfile;
+use App\Models\ReaderProfile;
 
 class User extends Authenticatable
 {
@@ -83,6 +84,11 @@ class User extends Authenticatable
     public function preference()
     {
         return $this->hasOne(UserPreference::class);
+    }
+
+    public function readerProfile()
+    {
+        return $this->hasOne(ReaderProfile::class);
     }
 
     public function payoutAccounts()

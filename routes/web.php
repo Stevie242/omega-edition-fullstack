@@ -22,6 +22,11 @@ Route::middleware(['auth', 'role:creator'])->group(function (): void {
     Route::post('/onboarding/creator', [\App\Http\Controllers\Creator\OnboardingController::class, 'store'])->name('creator.onboarding.store');
 });
 
+Route::middleware(['auth', 'role:reader'])->group(function (): void {
+    Route::get('/onboarding/reader', [\App\Http\Controllers\Reader\OnboardingController::class, 'show'])->name('reader.onboarding');
+    Route::post('/onboarding/reader', [\App\Http\Controllers\Reader\OnboardingController::class, 'store'])->name('reader.onboarding.store');
+});
+
 require __DIR__.'/settings.php';
 require __DIR__.'/creator.php';
 require __DIR__.'/reader.php';

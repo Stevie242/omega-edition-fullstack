@@ -8,10 +8,9 @@ use App\Http\Controllers\Reader\SeriesController;
 use App\Http\Controllers\Reader\SubscriptionController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified'])
+Route::middleware(['auth', 'verified', 'role:reader', 'reader.onboarded'])
     ->prefix('reader')
     ->as('reader.')
-    ->middleware('role:reader,creator,admin')
     ->group(function (): void {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
