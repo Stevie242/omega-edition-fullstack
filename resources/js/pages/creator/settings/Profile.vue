@@ -11,6 +11,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import DeleteUser from '@/components/DeleteUser.vue';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
@@ -499,6 +500,19 @@ const submitProfile = () => {
                 </div>
             </div>
 
+            <Card class="border-destructive/40 bg-destructive/5">
+                <CardHeader>
+                    <CardTitle>Zone sensible</CardTitle>
+                    <CardDescription>Supprimer définitivement votre compte créateur.</CardDescription>
+                </CardHeader>
+                <CardContent class="space-y-3 text-sm text-muted-foreground">
+                    <p>
+                        Cette action est irréversible. Toutes vos données (profil, séries, facturation) seront supprimées.
+                        Pensez à exporter vos informations avant de continuer.
+                    </p>
+                    <DeleteUser />
+                </CardContent>
+            </Card>
         </div>
     </CreatorLayout>
 </template>
