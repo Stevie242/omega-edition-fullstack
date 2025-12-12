@@ -10,6 +10,6 @@ class PayoutsController extends Controller
 {
     public function index(): Response
     {
-        return Inertia::render('creator/Payouts');
+        return Inertia::render('creator/Payouts/Index');
     }
 }
