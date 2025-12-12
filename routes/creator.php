@@ -8,10 +8,9 @@ use App\Http\Controllers\Creator\TaxProfileController;
 use App\Http\Controllers\Creator\SeriesController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'verified'])
+Route::middleware(['auth', 'verified', 'role:creator', 'creator.onboarded'])
     ->prefix('creator')
     ->as('creator.')
-    ->middleware('role:creator,admin')
     ->group(function (): void {
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 

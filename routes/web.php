@@ -17,6 +17,11 @@ if (Features::enabled(Features::registration())) {
     });
 }
 
+Route::middleware(['auth', 'role:creator'])->group(function (): void {
+    Route::get('/onboarding/creator', [\App\Http\Controllers\Creator\OnboardingController::class, 'show'])->name('creator.onboarding');
+    Route::post('/onboarding/creator', [\App\Http\Controllers\Creator\OnboardingController::class, 'store'])->name('creator.onboarding.store');
+});
+
 require __DIR__.'/settings.php';
 require __DIR__.'/creator.php';
 require __DIR__.'/reader.php';

@@ -35,6 +35,7 @@ class ProfileCreator extends Model
         'availability',
         'avatar_url',
         'cover_url',
+        'is_completed',
     ];
 
     public function user()
