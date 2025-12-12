@@ -42,7 +42,7 @@ const loadPrefs = () => {
                 currency.value = parsed.currency ?? currency.value;
             }
         } catch (e) {
-            console.warn('Impossible de charger les préférences d’apparence.', e);
+            console.warn("Impossible de charger les préférences d'apparence.", e);
         }
     }
     applyTheme(theme.value);
@@ -63,18 +63,18 @@ const savePrefs = () => {
             onSuccess: () => {
                 localStorage.setItem(
                     STORAGE_KEY,
-                JSON.stringify({
-                    theme: theme.value,
-                    currency: currency.value,
-                }),
-            );
-            applyTheme(theme.value);
-            toast.add({ severity: 'success', summary: 'Préférences enregistrées', life: 2200 });
-        },
-        onError: () => {
-            toast.add({ severity: 'error', summary: 'Erreur lors de la sauvegarde', life: 2500 });
-        },
-    });
+                    JSON.stringify({
+                        theme: theme.value,
+                        currency: currency.value,
+                    }),
+                );
+                applyTheme(theme.value);
+                toast.add({ severity: 'success', summary: 'Préférences enregistrées', life: 2200 });
+            },
+            onError: () => {
+                toast.add({ severity: 'error', summary: 'Erreur lors de la sauvegarde', life: 2500 });
+            },
+        });
 };
 
 const resetPrefs = () => {
@@ -153,8 +153,11 @@ watch(
                     <CardDescription>Enregistrer ou réinitialiser vos préférences locales.</CardDescription>
                 </CardHeader>
                 <CardContent class="flex flex-wrap items-center gap-3">
-                    <Button @click="savePrefs">Enregistrer</Button>
-                    <Button variant="outline" @click="resetPrefs">Réinitialiser</Button>
+                    <Button :disabled="form.processing" @click="savePrefs">
+                        <span v-if="form.processing" class="mr-1 animate-pulse">…</span>
+                        Enregistrer
+                    </Button>
+                    <Button variant="outline" :disabled="form.processing" @click="resetPrefs">Réinitialiser</Button>
                     <p class="text-xs text-muted-foreground">
                         Vos préférences sont synchronisées sur votre compte et appliquées sur tous vos appareils.
                     </p>

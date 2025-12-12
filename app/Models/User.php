@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use App\Models\ProfileCreator;
 use App\Models\UserPreference;
+use App\Models\PayoutAccount;
+use App\Models\Payout;
+use App\Models\Invoice;
 
 class User extends Authenticatable
 {
@@ -79,5 +82,20 @@ class User extends Authenticatable
     public function preference()
     {
         return $this->hasOne(UserPreference::class);
+    }
+
+    public function payoutAccounts()
+    {
+        return $this->hasMany(PayoutAccount::class);
+    }
+
+    public function payouts()
+    {
+        return $this->hasMany(Payout::class);
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class);
     }
 }

@@ -22,99 +22,61 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatFromXaf, type CurrencyCode } from '@/lib/currency';
 import { usePage } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 type PayoutMethod = 'bank' | 'card' | 'mobile_money';
+
+const props = defineProps<{
+    summary: {
+        gross: number;
+        platform: number;
+        net: number;
+        paid: number;
+        pending: number;
+    };
+    payouts: Array<{
+        id: string;
+        reference: string | null;
+        amount_xaf: number;
+        status: string;
+        paid_at?: string | null;
+        payout_account_id?: string | null;
+        account?: { id: string; label: string | null } | null;
+    }>;
+    invoices: Array<{
+        id: string;
+        number: string;
+        period_label?: string | null;
+        amount_xaf: number;
+        status: string;
+        payment_method?: string | null;
+        paid_at?: string | null;
+    }>;
+    accounts: Array<{
+        id: string;
+        type: PayoutMethod;
+        label: string | null;
+        holder_first_name: string | null;
+        holder_last_name: string | null;
+        details: string | null;
+        is_default: boolean;
+        status: string;
+    }>;
+}>();
 
 const tabs = [
     { id: 'revenus', label: 'Revenus & reversements' },
     { id: 'factures', label: 'Factures' },
     { id: 'abonnement', label: 'Abonnement' },
-];
+] as const;
 
 const page = usePage();
-const activeTab = ref<'revenus' | 'factures' | 'abonnement'>('revenus');
+const activeTab = ref<(typeof tabs)[number]['id']>('revenus');
 const initialCurrency = (page.props.preference as any)?.currency as CurrencyCode | undefined;
 const currency = ref<CurrencyCode>(initialCurrency || 'XAF');
 const locale = 'fr-FR';
 
-const summary = {
-    gross: 4320000, // XAF
-    platform: 1080000, // XAF
-    net: 3240000, // XAF
-    paid: 2620000, // XAF
-    pending: 620000, // XAF
-};
-
-const invoices = [
-    {
-        date: '05 jan 2025',
-        number: 'FAC-2025-001',
-        period: 'Déc 2024',
-        amount: 12500, // XAF
-        status: 'payé',
-        method: 'Visa **** 4242',
-    },
-    {
-        date: '05 déc 2024',
-        number: 'FAC-2024-012',
-        period: 'Nov 2024',
-        amount: 12500,
-        status: 'payé',
-        method: 'Visa **** 4242',
-    },
-    {
-        date: '05 nov 2024',
-        number: 'FAC-2024-011',
-        period: 'Oct 2024',
-        amount: 12500,
-        status: 'payé',
-        method: 'Visa **** 4242',
-    },
-];
-
-const payouts = [
-    {
-        date: '28 déc 2024',
-        ref: 'TRF-2024-123',
-        amount: 620000,
-        status: 'versé',
-        proof: 'Voir',
-        account: 'Banque - UBA',
-    },
-    {
-        date: '30 nov 2024',
-        ref: 'TRF-2024-112',
-        amount: 840000,
-        status: 'versé',
-        proof: 'Voir',
-        account: 'Banque - UBA',
-    },
-    {
-        date: '02 nov 2024',
-        ref: 'TRF-2024-098',
-        amount: 1160000,
-        status: 'versé',
-        proof: 'Voir',
-        account: 'Mobile Money - MTN',
-    },
-];
-
-const plan = {
-    name: 'Creator Pro',
-    price: 12500, // XAF
-    status: 'Actif',
-    renewsAt: '15 fév 2025',
-    method: 'Visa **** 4242 (expiry 08/27)',
-    perks: [
-        '70 % de partage créateur',
-        'Support prioritaire',
-        'Exports et relevés illimités',
-        'Stockage HD inclus',
-    ],
-};
-
-const tabClass = (id: typeof tabs[number]['id']) =>
+const tabClass = (id: (typeof tabs)[number]['id']) =>
     [
         'min-w-[200px] rounded-md px-4 py-2 text-sm font-medium transition-colors',
         activeTab.value === id
@@ -133,50 +95,64 @@ const currencyClass = (code: CurrencyCode) =>
     ].join(' ');
 
 const statusVariant = (status: string) => {
-    if (status === 'payé' || status === 'versé') return 'default';
-    if (status === 'en attente') return 'secondary';
+    const normalized = status.toLowerCase();
+    if (normalized.includes('pay') || normalized.includes('vers')) return 'default';
+    if (normalized.includes('attente') || normalized === 'pending' || normalized === 'processing') return 'secondary';
     return 'outline';
 };
 
 const formatAmount = (amountInXaf: number) => formatFromXaf(amountInXaf, currency.value, locale);
 
-const setTab = (id: typeof tabs[number]['id']) => {
+const payoutRows = computed(() =>
+    props.payouts.map((p) => ({
+        date: p.paid_at ? new Date(p.paid_at).toLocaleDateString('fr-FR') : '-',
+        ref: p.reference || p.id.slice(0, 8).toUpperCase(),
+        amount: p.amount_xaf,
+        status: p.status === 'paid' ? 'versé' : p.status,
+        account: p.account?.label || 'Compte',
+    })),
+);
+
+const invoiceRows = computed(() =>
+    props.invoices.map((inv) => ({
+        date: inv.paid_at ? new Date(inv.paid_at).toLocaleDateString('fr-FR') : '-',
+        number: inv.number,
+        period: inv.period_label || 'Période',
+        amount: inv.amount_xaf,
+        status: inv.status,
+        method: inv.payment_method || '—',
+    })),
+);
+
+const accountsRows = computed(() =>
+    props.accounts.map((acc) => ({
+        ...acc,
+        holder: `${acc.holder_first_name ?? ''} ${acc.holder_last_name ?? ''}`.trim(),
+    })),
+);
+
+const summary = computed(() => props.summary);
+
+const plan = {
+    name: 'Creator Pro',
+    price: 12500, // placeholder
+    status: 'Actif',
+    renewsAt: '15 fév 2025',
+    method: 'Visa **** 4242 (expiry 08/27)',
+    perks: [
+        '70 % de partage créateur',
+        'Support prioritaire',
+        'Exports et relevés illimités',
+        'Stockage HD inclus',
+    ],
+};
+
+const setTab = (id: (typeof tabs)[number]['id']) => {
     activeTab.value = id;
 };
 
 const showAddAccount = ref(false);
 const showDispute = ref(false);
-
-const payoutAccounts = ref<
-    Array<{
-        id: string;
-        type: PayoutMethod;
-        label: string;
-        details: string;
-        holder: string;
-        isDefault: boolean;
-        status: 'validé' | 'en attente';
-    }>
->([
-    {
-        id: 'acc-1',
-        type: 'bank',
-        label: 'Banque - UBA',
-        details: 'IBAN XAF •••• 8712',
-        holder: 'Koumba Diallo',
-        isDefault: true,
-        status: 'validé',
-    },
-    {
-        id: 'acc-2',
-        type: 'mobile_money',
-        label: 'Mobile Money - MTN',
-        details: '077 ** ** 12',
-        holder: 'Koumba Diallo',
-        isDefault: false,
-        status: 'en attente',
-    },
-]);
 
 const addAccountForm = ref({
     type: 'bank' as PayoutMethod,
@@ -299,7 +275,7 @@ const disputeForm = ref({
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-border/60">
-                                    <tr v-for="item in payouts" :key="item.ref" class="align-middle">
+                                    <tr v-for="item in payoutRows" :key="item.ref" class="align-middle">
                                         <td class="py-3">{{ item.date }}</td>
                                         <td class="py-3">{{ item.ref }}</td>
                                         <td class="py-3 font-medium text-foreground">
@@ -310,9 +286,7 @@ const disputeForm = ref({
                                             <Badge :variant="statusVariant(item.status)">{{ item.status }}</Badge>
                                         </td>
                                         <td class="py-3">
-                                            <Button size="sm" variant="ghost">
-                                                {{ item.proof }}
-                                            </Button>
+                                            <Button size="sm" variant="ghost">Voir</Button>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -349,7 +323,7 @@ const disputeForm = ref({
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-border/60">
-                                    <tr v-for="invoice in invoices" :key="invoice.number" class="align-middle">
+                                    <tr v-for="invoice in invoiceRows" :key="invoice.number" class="align-middle">
                                         <td class="py-3">{{ invoice.date }}</td>
                                         <td class="py-3">{{ invoice.number }}</td>
                                         <td class="py-3">{{ invoice.period }}</td>
@@ -420,34 +394,36 @@ const disputeForm = ref({
                         <CardContent class="space-y-4 text-sm">
                             <div class="space-y-3">
                                 <div
-                                    v-for="account in payoutAccounts"
+                                    v-for="account in accountsRows"
                                     :key="account.id"
                                     class="flex items-start justify-between gap-3 rounded-md border bg-muted/40 px-3 py-2"
                                 >
                                     <div class="space-y-1">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-medium text-foreground">{{ account.label }}</span>
-                                    <Badge variant="outline">{{ account.type }}</Badge>
-                                    <Badge
-                                        v-if="account.isDefault"
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-medium text-foreground">{{ account.label }}</span>
+                                            <Badge variant="outline">{{ account.type }}</Badge>
+                                            <Badge
+                                                v-if="account.is_default"
                                                 variant="secondary"
                                             >
                                                 Défaut
                                             </Badge>
                                             <Badge
                                                 v-else
-                                                :variant="account.status === 'validé' ? 'secondary' : 'outline'"
+                                                :variant="account.status === 'verified' ? 'secondary' : 'outline'"
                                             >
-                                            {{ account.status }}
-                                        </Badge>
+                                                {{ account.status }}
+                                            </Badge>
+                                        </div>
+                                        <p class="text-muted-foreground text-xs">{{ account.details }}</p>
+                                        <p class="text-muted-foreground text-xs">
+                                            Titulaire : {{ account.holder || '—' }}
+                                        </p>
                                     </div>
-                                    <p class="text-muted-foreground text-xs">{{ account.details }}</p>
-                                    <p class="text-muted-foreground text-xs">Titulaire : {{ account.holder }}</p>
-                                </div>
-                                <div class="flex items-center gap-2">
-                                    <Button size="sm" variant="outline">Définir défaut</Button>
-                                    <Button size="sm" variant="ghost">Supprimer</Button>
-                                </div>
+                                    <div class="flex items-center gap-2">
+                                        <Button size="sm" variant="outline">Définir défaut</Button>
+                                        <Button size="sm" variant="ghost">Supprimer</Button>
+                                    </div>
                                 </div>
                             </div>
                             <div class="flex gap-2">
@@ -519,7 +495,7 @@ const disputeForm = ref({
                 </div>
                 <DialogFooter class="gap-2">
                     <DialogClose as-child>
-                        <Button variant="outline" @click="addAccountForm = { type: 'bank', label: '', details: '', default: false }">
+                        <Button variant="outline" @click="addAccountForm = { type: 'bank', label: '', details: '', firstName: '', lastName: '', default: false }">
                             Annuler
                         </Button>
                     </DialogClose>
