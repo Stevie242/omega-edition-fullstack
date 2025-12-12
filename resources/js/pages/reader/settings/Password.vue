@@ -7,6 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import ReaderLayout from '@/layouts/ReaderLayout.vue';
 import { Form } from '@inertiajs/vue3';
+import { useToast } from 'primevue/usetoast';
+
+const toast = useToast();
 </script>
 
 <template>
@@ -30,7 +33,8 @@ import { Form } from '@inertiajs/vue3';
                 reset-on-success
                 :reset-on-error="['password', 'password_confirmation', 'current_password']"
                 class="space-y-6 rounded-lg border bg-card p-6"
-                v-slot="{ errors, processing, recentlySuccessful }"
+                @success="toast.add({ severity: 'success', summary: 'Mot de passe mis à jour', life: 2500 })"
+                v-slot="{ errors, processing }"
             >
                 <div class="grid gap-2">
                     <Label for="current_password">Mot de passe actuel</Label>
@@ -70,16 +74,6 @@ import { Form } from '@inertiajs/vue3';
 
                 <div class="flex items-center gap-4">
                     <Button :disabled="processing">Sauvegarder</Button>
-                    <Transition
-                        enter-active-class="transition ease-in-out"
-                        enter-from-class="opacity-0"
-                        leave-active-class="transition ease-in-out"
-                        leave-to-class="opacity-0"
-                    >
-                        <p v-show="recentlySuccessful" class="text-sm text-green-600">
-                            Mot de passe mis à jour.
-                        </p>
-                    </Transition>
                 </div>
             </Form>
         </div>
