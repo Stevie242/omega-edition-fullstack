@@ -15,7 +15,11 @@ class SettingsController extends Controller
 
     public function appearance(): Response
     {
-        return Inertia::render('reader/settings/Appearance');
+        $user = request()->user()->load('preference');
+
+        return Inertia::render('reader/settings/Appearance', [
+            'preference' => $user->preference,
+        ]);
     }
 
     public function password(): Response

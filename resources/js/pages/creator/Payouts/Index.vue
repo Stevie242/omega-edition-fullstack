@@ -21,6 +21,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatFromXaf, type CurrencyCode } from '@/lib/currency';
+import { usePage } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 type PayoutMethod = 'bank' | 'card' | 'mobile_money';
@@ -31,8 +32,10 @@ const tabs = [
     { id: 'abonnement', label: 'Abonnement' },
 ];
 
+const page = usePage();
 const activeTab = ref<'revenus' | 'factures' | 'abonnement'>('revenus');
-const currency = ref<CurrencyCode>('XAF');
+const initialCurrency = (page.props.preference as any)?.currency as CurrencyCode | undefined;
+const currency = ref<CurrencyCode>(initialCurrency || 'XAF');
 const locale = 'fr-FR';
 
 const summary = {

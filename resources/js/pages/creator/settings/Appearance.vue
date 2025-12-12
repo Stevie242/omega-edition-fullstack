@@ -3,16 +3,23 @@ import CreatorLayout from '@/layouts/CreatorLayout.vue';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from 'primevue/usetoast';
-import { onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import { type CurrencyCode } from '@/lib/currency';
+import { useForm, usePage } from '@inertiajs/vue3';
 
 type ThemeOption = 'system' | 'light' | 'dark';
 
 const toast = useToast();
 const STORAGE_KEY = 'creator.ui.appearance';
+const page = usePage();
 
 const theme = ref<ThemeOption>('system');
 const currency = ref<CurrencyCode>('XAF');
+const form = useForm({
+    theme: theme.value,
+    currency: currency.value,
+    payload: null as Record<string, unknown> | null,
+});
 
 const applyTheme = (value: ThemeOption) => {
     const root = document.documentElement;
@@ -22,28 +29,52 @@ const applyTheme = (value: ThemeOption) => {
 };
 
 const loadPrefs = () => {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return;
-        const parsed = JSON.parse(raw);
-        theme.value = parsed.theme ?? theme.value;
-        currency.value = parsed.currency ?? currency.value;
-    } catch (e) {
-        console.warn('Impossible de charger les préférences d’apparence.', e);
+    const pref = (page.props.preference ?? null) as { theme?: ThemeOption; currency?: CurrencyCode } | null;
+    if (pref) {
+        theme.value = pref.theme ?? theme.value;
+        currency.value = pref.currency ?? currency.value;
+    } else {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                theme.value = parsed.theme ?? theme.value;
+                currency.value = parsed.currency ?? currency.value;
+            }
+        } catch (e) {
+            console.warn('Impossible de charger les préférences d’apparence.', e);
+        }
     }
     applyTheme(theme.value);
 };
 
 const savePrefs = () => {
-    localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({
-            theme: theme.value,
-            currency: currency.value,
-        }),
-    );
-    applyTheme(theme.value);
-    toast.add({ severity: 'success', summary: 'Préférences enregistrées', life: 2200 });
+    form.theme = theme.value;
+    form.currency = currency.value;
+    form.payload = null;
+    form
+        .transform((data) => ({
+            theme: data.theme,
+            currency: data.currency,
+            data: data.payload,
+        }))
+        .put('/settings/preferences', {
+            preserveScroll: true,
+            onSuccess: () => {
+                localStorage.setItem(
+                    STORAGE_KEY,
+                JSON.stringify({
+                    theme: theme.value,
+                    currency: currency.value,
+                }),
+            );
+            applyTheme(theme.value);
+            toast.add({ severity: 'success', summary: 'Préférences enregistrées', life: 2200 });
+        },
+        onError: () => {
+            toast.add({ severity: 'error', summary: 'Erreur lors de la sauvegarde', life: 2500 });
+        },
+    });
 };
 
 const resetPrefs = () => {
@@ -53,6 +84,17 @@ const resetPrefs = () => {
 };
 
 onMounted(() => loadPrefs());
+
+watch(
+    () => page.props.preference,
+    (pref) => {
+        if (pref && typeof pref === 'object') {
+            theme.value = (pref as any).theme ?? theme.value;
+            currency.value = (pref as any).currency ?? currency.value;
+            applyTheme(theme.value);
+        }
+    },
+);
 </script>
 
 <template>
@@ -114,7 +156,7 @@ onMounted(() => loadPrefs());
                     <Button @click="savePrefs">Enregistrer</Button>
                     <Button variant="outline" @click="resetPrefs">Réinitialiser</Button>
                     <p class="text-xs text-muted-foreground">
-                        Préférences locales (stockées dans votre navigateur). À connecter plus tard à une API si besoin.
+                        Vos préférences sont synchronisées sur votre compte et appliquées sur tous vos appareils.
                     </p>
                 </CardContent>
             </Card>

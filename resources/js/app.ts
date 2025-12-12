@@ -8,7 +8,7 @@ import { createPinia } from 'pinia';
 import PrimeVue from 'primevue/config';
 import Aura from '@primeuix/themes/aura';
 import ToastService from 'primevue/toastservice';
-import { initializeTheme } from './composables/useAppearance';
+import { updateTheme } from './composables/useAppearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -21,6 +21,14 @@ createInertiaApp({
         ),
     setup({ el, App, props, plugin }) {
         const pinia = createPinia();
+
+        const initialPreference = (props.initialPage.props as any)?.preference || null;
+        const savedAppearance = typeof window !== 'undefined' ? localStorage.getItem('appearance') : null;
+        const appearance = (initialPreference?.theme as string) || savedAppearance || 'system';
+        updateTheme(appearance as any);
+        if (initialPreference?.theme && typeof window !== 'undefined') {
+            localStorage.setItem('appearance', initialPreference.theme);
+        }
 
         createApp({ render: () => h(App, props) })
             .use(plugin)
@@ -38,6 +46,3 @@ createInertiaApp({
         color: '#4B5563',
     },
 });
-
-// This will set light / dark mode on page load...
-initializeTheme();
