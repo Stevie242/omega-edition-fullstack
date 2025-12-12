@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Reader\ChaptersController;
 use App\Http\Controllers\Reader\DashboardController;
+use App\Http\Controllers\Reader\ChapterViewController;
 use App\Http\Controllers\Reader\ProfileController;
 use App\Http\Controllers\Reader\SeriesController;
 use App\Http\Controllers\Reader\SubscriptionController;
@@ -16,6 +17,7 @@ Route::middleware(['auth', 'verified'])
 
         Route::resource('series', SeriesController::class)->only(['index', 'show']);
         Route::get('chapters/{chapter}', [ChaptersController::class, 'show'])->name('chapters.show');
+        Route::post('chapters/{chapter}/view', [ChapterViewController::class, 'store'])->name('chapters.view');
 
         Route::get('favorites', [ProfileController::class, 'favorites'])->name('favorites');
         Route::get('history', [ProfileController::class, 'history'])->name('history');
