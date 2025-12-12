@@ -8,6 +8,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use App\Models\ProfileCreator;
+use App\Models\UserPreference;
 
 class User extends Authenticatable
 {
@@ -73,5 +74,10 @@ class User extends Authenticatable
     public function creatorProfile()
     {
         return $this->hasOne(ProfileCreator::class);
+    }
+
+    public function preference()
+    {
+        return $this->hasOne(UserPreference::class);
     }
 }
