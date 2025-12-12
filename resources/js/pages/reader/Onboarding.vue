@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Head, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { UploadCloud } from 'lucide-vue-next';
 
 interface ReaderProfile {
     first_name?: string | null;
@@ -18,6 +19,15 @@ interface ReaderProfile {
     is_completed?: boolean;
 }
 
+const csvString = (values?: string[] | null) =>
+    Array.isArray(values) ? values.join(', ') : '';
+
+const parseCsv = (value: string) =>
+    value
+        .split(',')
+        .map((g) => g.trim())
+        .filter(Boolean);
+
 const props = defineProps<{
     profile: ReaderProfile;
 }>();
@@ -26,14 +36,29 @@ const form = useForm({
     first_name: props.profile.first_name ?? '',
     last_name: props.profile.last_name ?? '',
     avatar_url: props.profile.avatar_url ?? '',
+    avatar_file: null as File | null,
     birthdate: props.profile.birthdate ?? '',
-    preferred_genres: props.profile.preferred_genres ?? [],
-    preferred_formats: props.profile.preferred_formats ?? [],
-    preferred_themes: props.profile.preferred_themes ?? [],
+    preferred_genres_input: csvString(props.profile.preferred_genres),
+    preferred_formats_input: csvString(props.profile.preferred_formats),
+    preferred_themes_input: csvString(props.profile.preferred_themes),
     language_preferences: props.profile.language_preferences ?? '',
 });
 
 const isCompleted = computed(() => props.profile?.is_completed === true);
+
+const submit = () => {
+    form.transform((data) => ({
+        first_name: data.first_name,
+        last_name: data.last_name,
+        avatar_url: data.avatar_url,
+        avatar_file: data.avatar_file,
+        birthdate: data.birthdate,
+        preferred_genres: parseCsv(data.preferred_genres_input ?? ''),
+        preferred_formats: parseCsv(data.preferred_formats_input ?? ''),
+        preferred_themes: parseCsv(data.preferred_themes_input ?? ''),
+        language_preferences: data.language_preferences,
+    })).post('/onboarding/reader');
+};
 </script>
 
 <template>
@@ -126,7 +151,7 @@ const isCompleted = computed(() => props.profile?.is_completed === true);
                     <form
                         v-else
                         class="grid gap-5"
-                        @submit.prevent="form.post('/onboarding/reader')"
+                        @submit.prevent="submit"
                     >
                         <div class="grid gap-4 md:grid-cols-2">
                             <div class="grid gap-2">
@@ -172,11 +197,10 @@ const isCompleted = computed(() => props.profile?.is_completed === true);
                             <Label for="preferred_genres">Genres préférés (séparés par des virgules)</Label>
                             <Input
                                 id="preferred_genres"
-                                :value="Array.isArray(form.preferred_genres) ? form.preferred_genres.join(', ') : ''"
+                                v-model="form.preferred_genres_input"
                                 name="preferred_genres"
                                 type="text"
                                 placeholder="Shonen, Seinen, Romance..."
-                                @input="form.preferred_genres = $event.target.value.split(',').map(g => g.trim()).filter(Boolean)"
                             />
                             <InputError :message="form.errors.preferred_genres" />
                         </div>
@@ -185,11 +209,10 @@ const isCompleted = computed(() => props.profile?.is_completed === true);
                             <Label for="preferred_themes">Thèmes favoris (séparés par des virgules)</Label>
                             <Input
                                 id="preferred_themes"
-                                :value="Array.isArray(form.preferred_themes) ? form.preferred_themes.join(', ') : ''"
+                                v-model="form.preferred_themes_input"
                                 name="preferred_themes"
                                 type="text"
                                 placeholder="Cyberpunk, Fantastique, Slice of life..."
-                                @input="form.preferred_themes = $event.target.value.split(',').map(g => g.trim()).filter(Boolean)"
                             />
                             <InputError :message="form.errors.preferred_themes" />
                         </div>
@@ -198,11 +221,10 @@ const isCompleted = computed(() => props.profile?.is_completed === true);
                             <Label for="preferred_formats">Formats préférés (séparés par des virgules)</Label>
                             <Input
                                 id="preferred_formats"
-                                :value="Array.isArray(form.preferred_formats) ? form.preferred_formats.join(', ') : ''"
+                                v-model="form.preferred_formats_input"
                                 name="preferred_formats"
                                 type="text"
                                 placeholder="Webtoon, Manga relié, Audio..."
-                                @input="form.preferred_formats = $event.target.value.split(',').map(g => g.trim()).filter(Boolean)"
                             />
                             <InputError :message="form.errors.preferred_formats" />
                         </div>
@@ -219,16 +241,48 @@ const isCompleted = computed(() => props.profile?.is_completed === true);
                             <InputError :message="form.errors.language_preferences" />
                         </div>
 
-                        <div class="grid gap-2">
-                            <Label for="avatar_url">Avatar (URL)</Label>
-                            <Input
-                                id="avatar_url"
-                                v-model="form.avatar_url"
-                                name="avatar_url"
-                                type="url"
-                                placeholder="https://..."
-                            />
-                            <InputError :message="form.errors.avatar_url" />
+                        <div class="grid gap-3 md:grid-cols-2">
+                            <div class="grid gap-2">
+                                <Label for="avatar_url">Avatar (URL)</Label>
+                                <Input
+                                    id="avatar_url"
+                                    v-model="form.avatar_url"
+                                    name="avatar_url"
+                                    type="url"
+                                    placeholder="https://..."
+                                />
+                                <InputError :message="form.errors.avatar_url" />
+                            </div>
+                            <div class="grid gap-2">
+                                <Label for="avatar_file">Uploader un avatar</Label>
+                                <label
+                                    class="group flex cursor-pointer items-center justify-between gap-3 rounded-md border border-dashed border-white/20 bg-white/5 px-3 py-2 text-sm text-white/80 transition hover:border-white/40 hover:bg-white/10"
+                                >
+                                    <div class="flex items-center gap-3">
+                                        <span
+                                            class="flex h-9 w-9 items-center justify-center rounded-md bg-white/10 text-white"
+                                        >
+                                            <UploadCloud class="size-4" />
+                                        </span>
+                                        <div class="flex flex-col">
+                                            <span class="text-white">Choisir un fichier</span>
+                                            <span class="text-[11px] text-white/60">PNG/JPG jusqu'à 5 Mo</span>
+                                        </div>
+                                    </div>
+                                    <input
+                                        id="avatar_file"
+                                        name="avatar_file"
+                                        type="file"
+                                        accept="image/*"
+                                        class="sr-only"
+                                        @change="(e: Event) => form.avatar_file = (e.target as HTMLInputElement)?.files?.[0] ?? null"
+                                    />
+                                    <span class="text-xs text-white/70">
+                                        {{ form.avatar_file ? form.avatar_file.name : 'Aucun fichier' }}
+                                    </span>
+                                </label>
+                                <InputError :message="form.errors.avatar_file" />
+                            </div>
                         </div>
 
                         <div class="flex items-center justify-end gap-3">

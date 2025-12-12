@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
             $table->string('avatar_url')->nullable();
+            $table->string('avatar_disk_path')->nullable();
             $table->date('birthdate')->nullable();
             $table->unsignedTinyInteger('age')->nullable();
             $table->json('preferred_genres')->nullable();

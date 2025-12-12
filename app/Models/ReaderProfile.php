@@ -19,6 +19,7 @@ class ReaderProfile extends Model
         'first_name',
         'last_name',
         'avatar_url',
+        'avatar_disk_path',
         'birthdate',
         'age',
         'preferred_genres',
