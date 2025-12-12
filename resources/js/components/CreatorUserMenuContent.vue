@@ -10,7 +10,7 @@ import { logout } from '@/routes';
 import { edit } from '@/routes/profile';
 import type { User } from '@/types';
 import { Link, router } from '@inertiajs/vue3';
-import { Lock, LogOut, Monitor, Palette, Settings } from 'lucide-vue-next';
+import { Lock, LogOut, Monitor, Palette, Settings, Percent } from 'lucide-vue-next';
 
 interface Props {
     user: User;
@@ -47,6 +47,12 @@ defineProps<Props>();
             <Link class="block w-full" href="/creator/settings/password" prefetch as="button">
                 <Lock class="mr-2 h-4 w-4" />
                 Mot de passe
+            </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem :as-child="true">
+            <Link class="block w-full" href="/creator/settings/tax" prefetch as="button">
+                <Percent class="mr-2 h-4 w-4" />
+                Fiscalité
             </Link>
         </DropdownMenuItem>
         <DropdownMenuItem :as-child="true">

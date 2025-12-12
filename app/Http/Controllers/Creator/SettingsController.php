@@ -102,16 +102,26 @@ class SettingsController extends Controller
 
     public function appearance(): Response
     {
-        $user = request()->user()->load('preference');
+        $user = request()->user()->load(['preference', 'taxProfile']);
 
         return Inertia::render('creator/settings/Appearance', [
             'preference' => $user->preference,
+            'taxProfile' => $user->taxProfile,
         ]);
     }
 
     public function password(): Response
     {
         return Inertia::render('creator/settings/Password');
+    }
+
+    public function tax(): Response
+    {
+        $user = request()->user()->load('taxProfile');
+
+        return Inertia::render('creator/settings/Tax', [
+            'taxProfile' => $user->taxProfile,
+        ]);
     }
 
     public function twoFactor(): Response
