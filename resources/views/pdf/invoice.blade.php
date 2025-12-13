@@ -206,7 +206,7 @@
           </td>
           <td class="meta">
             <strong>N° {{ $invoice->number }}</strong>
-            <div class="muted">—</div>
+            <div class="muted">{{ optional($invoice->created_at)->format('d/m/Y') ?? '' }}</div>
           </td>
         </tr>
       </table>
