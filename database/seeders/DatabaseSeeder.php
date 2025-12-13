@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
             CreatorUserSeeder::class,
             ReaderUserSeeder::class,
             TagSeeder::class,
+            SubscriptionPlanSeeder::class,
         ]);
     }
 }
