@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
     {
         // Exemple : $schedule->command('revenue:aggregate')->monthly();
         $schedule->command('reader:ensure-subscriptions')->daily();
+        $schedule->command('reader:renew-subscriptions')->daily();
     }
 
     /**

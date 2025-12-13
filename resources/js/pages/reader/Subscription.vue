@@ -155,7 +155,7 @@ const formatAmount = (amount: number) => formatFromXaf(amount, currency, 'fr-FR'
                                     class="inline-flex items-center gap-1 text-xs text-primary underline"
                                     target="_blank"
                                 >
-                                    <FileText class="h-4 w-4" /> PDF
+                                    <FileText class="h-4 w-4" /> Télécharger
                                 </Link>
                             </div>
                         </div>

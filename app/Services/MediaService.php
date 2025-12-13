@@ -44,6 +44,14 @@ class MediaService
         }
     }
 
+    public function storeContent(string $content, string $folder, string $filename): ?string
+    {
+        $path = rtrim($folder, '/').'/'.$filename;
+        $stored = $this->disk()->put($path, $content);
+
+        return $stored ? $path : null;
+    }
+
     public function url(?string $path): ?string
     {
         return $path ? $this->disk()->url($path) : null;
