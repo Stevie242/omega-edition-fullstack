@@ -3,14 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import ReaderLayout from '@/layouts/ReaderLayout.vue';
-import { BadgeCheck, Crown, ShieldCheck, Wallet, FileText } from 'lucide-vue-next';
-import { Link } from '@inertiajs/vue3';
+import { BadgeCheck, ShieldCheck, Wallet, FileText } from 'lucide-vue-next';
+import { Link, useForm } from '@inertiajs/vue3';
 
 interface Subscription {
     name: string;
     price: string;
     period: string;
-    perks: string[];
+    perks?: string[];
     status?: 'active' | 'inactive';
     next_billing_at?: string | null;
 }
@@ -25,20 +25,32 @@ interface Invoice {
     pdf_url?: string | null;
 }
 
+interface Plan {
+    id: string;
+    name: string;
+    slug: string;
+    price: string;
+    period: string;
+    description?: string | null;
+    perks?: string[] | null;
+    is_default?: boolean;
+}
+
 const props = defineProps<{
     subscription?: Subscription | null;
+    subscriptionPerks?: string[] | null;
     invoices?: Invoice[];
-    plans?: {
-        id: string;
-        name: string;
-        slug: string;
-        price: string;
-        period: string;
-        description?: string | null;
-        perks?: string[] | null;
-        is_default?: boolean;
-    }[];
+    plans?: Plan[];
 }>();
+
+const form = useForm({
+    plan_id: '',
+});
+
+const selectPlan = (planId: string) => {
+    form.plan_id = planId;
+    form.post('/reader/subscription/choose');
+};
 
 const formatAmount = (amount: number) =>
     new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XAF' }).format(amount);
@@ -54,7 +66,9 @@ const formatAmount = (amount: number) =>
                 <CardHeader class="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                         <CardTitle>Ton plan</CardTitle>
-                        <CardDescription>Gestion du plan actif et renouvellement.</CardDescription>
+                        <CardDescription>
+                            {{ props.subscription?.status === 'active' ? 'Plan actif' : 'Aucun plan actif. Passe en premium pour tout débloquer.' }}
+                        </CardDescription>
                     </div>
                     <div class="flex items-center gap-2 text-sm">
                         <BadgeCheck class="h-4 w-4 text-emerald-500" />
@@ -78,18 +92,25 @@ const formatAmount = (amount: number) =>
                         </div>
                         <Separator />
                         <div class="grid gap-2 md:grid-cols-2">
-                            <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                            <div
+                                v-if="props.subscriptionPerks?.length"
+                                v-for="perk in props.subscriptionPerks"
+                                :key="perk"
+                                class="flex items-center gap-2 text-sm text-muted-foreground"
+                            >
                                 <ShieldCheck class="h-4 w-4 text-emerald-400" />
-                                Accès premium au catalogue
+                                <span>{{ perk }}</span>
                             </div>
-                            <div class="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Crown class="h-4 w-4 text-amber-400" />
-                                Soutien prioritaire des creators
-                            </div>
-                            <div class="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Wallet class="h-4 w-4 text-cyan-400" />
-                                Paiement sécurisé
-                            </div>
+                            <template v-else>
+                                <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <ShieldCheck class="h-4 w-4 text-emerald-400" />
+                                    Accès aux premiers chapitres gratuits
+                                </div>
+                                <div class="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Wallet class="h-4 w-4 text-cyan-400" />
+                                    Paiement sécurisé pour passer en premium
+                                </div>
+                            </template>
                         </div>
                     </div>
                 </CardContent>
@@ -182,7 +203,9 @@ const formatAmount = (amount: number) =>
                         </div>
                     </CardContent>
                     <CardFooter>
-                        <Button class="w-full">Choisir {{ plan.name }}</Button>
+                        <Button class="w-full" :disabled="form.processing" @click="selectPlan(plan.id)">
+                            Choisir {{ plan.name }}
+                        </Button>
                     </CardFooter>
                 </Card>
             </div>

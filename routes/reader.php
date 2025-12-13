@@ -22,6 +22,7 @@ Route::middleware(['auth', 'verified', 'role:reader', 'reader.onboarded'])
         Route::get('history', [ProfileController::class, 'history'])->name('history');
 
         Route::get('subscription', [SubscriptionController::class, 'index'])->name('subscription');
+        Route::post('subscription/choose', [SubscriptionController::class, 'choose'])->name('subscription.choose');
 
         Route::prefix('settings')->as('settings.')->group(function (): void {
             Route::get('profile', [\App\Http\Controllers\Reader\SettingsController::class, 'profile'])->name('profile');

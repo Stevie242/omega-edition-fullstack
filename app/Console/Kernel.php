@@ -13,6 +13,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // Exemple : $schedule->command('revenue:aggregate')->monthly();
+        $schedule->command('reader:ensure-subscriptions')->daily();
     }
 
     /**
