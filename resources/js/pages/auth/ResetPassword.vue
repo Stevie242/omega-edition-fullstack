@@ -19,8 +19,8 @@ const inputEmail = ref(props.email);
 
 <template>
     <AuthLayout
-        title="Reset password"
-        description="Please enter your new password below"
+        title="Réinitialise ton accès"
+        description="Choisis un nouveau mot de passe pour reprendre ton aventure Omega"
     >
         <Head title="Reset password" />
 
@@ -46,7 +46,7 @@ const inputEmail = ref(props.email);
                 </div>
 
                 <div class="grid gap-2">
-                    <Label for="password">Password</Label>
+                    <Label for="password">Mot de passe</Label>
                     <Input
                         id="password"
                         type="password"
@@ -61,7 +61,7 @@ const inputEmail = ref(props.email);
 
                 <div class="grid gap-2">
                     <Label for="password_confirmation">
-                        Confirm Password
+                        Confirme le mot de passe
                     </Label>
                     <Input
                         id="password_confirmation"
