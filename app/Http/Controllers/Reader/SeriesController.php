@@ -9,6 +9,9 @@ use App\Services\MediaService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
+use Illuminate\Support\Facades\Auth;
+use App\Models\ReaderFavorite;
+use App\Models\ChapterView;
 
 class SeriesController extends Controller
 {
@@ -74,8 +77,75 @@ class SeriesController extends Controller
 
     public function show(string $series): Response
     {
+        $media = app(MediaService::class);
+        $chapterPage = request()->integer('chapters_page', 1);
+
+        $serie = Series::query()
+            ->with(['creator:id,name', 'tags:id,name,slug'])
+            ->findOrFail($series);
+
+        $chaptersPaginator = $serie->chapters()
+            ->with(['pages' => fn ($p) => $p->orderBy('order')->limit(1)])
+            ->orderByDesc('published_at')
+            ->orderByDesc('number')
+            ->paginate(10, ['*'], 'chapters_page', $chapterPage);
+
+        $lastView = Auth::check()
+            ? ChapterView::where('user_id', Auth::id())
+                ->where('series_id', $serie->id)
+                ->orderByDesc('last_viewed_at')
+                ->first()
+            : null;
+
+        $data = [
+            'id' => $serie->id,
+            'title' => $serie->title,
+            'slug' => $serie->slug,
+            'type' => $serie->type,
+            'status' => $serie->status,
+            'format' => $serie->format,
+            'frequency' => $serie->frequency,
+            'language' => $serie->language,
+            'synopsis' => $serie->synopsis,
+            'rating' => $serie->rating,
+            'cover_url' => $media->url($serie->cover_path),
+            'hero_url' => $media->url($serie->hero_path),
+            'creator' => [
+                'id' => $serie->creator?->id,
+                'name' => $serie->creator?->name,
+            ],
+            'tags' => $serie->tags->map(fn ($tag) => [
+                'name' => $tag->name,
+                'slug' => $tag->slug,
+            ]),
+            'chapters' => $chaptersPaginator->getCollection()->map(function ($chapter) use ($media) {
+                $firstPage = $chapter->pages->first();
+                return [
+                    'id' => $chapter->id,
+                    'title' => $chapter->title,
+                    'number' => $chapter->number,
+                    'status' => $chapter->status,
+                    'published_at' => optional($chapter->published_at)->toDateString(),
+                    'preview_url' => $firstPage ? $media->url($firstPage->path) : null,
+                ];
+            })->values(),
+            'chaptersPagination' => [
+                'current_page' => $chaptersPaginator->currentPage(),
+                'last_page' => $chaptersPaginator->lastPage(),
+                'links' => $chaptersPaginator->linkCollection(),
+            ],
+            'is_favorite' => Auth::check() ? ReaderFavorite::where('user_id', Auth::id())->where('series_id', $serie->id)->exists() : false,
+            'likes_count' => $serie->likes_count,
+            'dislikes_count' => $serie->dislikes_count,
+            'can_comment' => Auth::check()
+                ? ChapterView::where('user_id', Auth::id())->where('series_id', $serie->id)->exists()
+                : false,
+            'last_read_chapter_id' => $lastView?->chapter_id,
+            'last_read_chapter_number' => $lastView?->chapter?->number,
+        ];
+
         return Inertia::render('reader/Series/Show', [
-            'seriesId' => $series,
+            'series' => $data,
         ]);
     }
 }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class ChapterView extends Model
+class ReaderFavorite extends Model
 {
     use HasFactory, HasUuids;
 
@@ -16,28 +16,12 @@ class ChapterView extends Model
 
     protected $fillable = [
         'user_id',
-        'chapter_id',
         'series_id',
-        'creator_id',
-        'year_month',
-        'duration_seconds',
-        'completion_ratio',
-        'first_viewed_at',
-        'last_viewed_at',
-        'counted_at',
-        'meta',
     ];
 
-    protected $casts = [
-        'first_viewed_at' => 'datetime',
-        'last_viewed_at' => 'datetime',
-        'counted_at' => 'datetime',
-        'meta' => 'array',
-    ];
-
-    public function chapter(): BelongsTo
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Chapter::class);
+        return $this->belongsTo(User::class);
     }
 
     public function series(): BelongsTo

@@ -15,6 +15,10 @@ Route::middleware(['auth', 'verified', 'role:reader', 'reader.onboarded'])
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('series', SeriesController::class)->only(['index', 'show']);
+        Route::post('series/{series}/favorite', [\App\Http\Controllers\Reader\SeriesActionController::class, 'favorite'])->name('series.favorite');
+        Route::delete('series/{series}/favorite', [\App\Http\Controllers\Reader\SeriesActionController::class, 'unfavorite'])->name('series.unfavorite');
+        Route::post('series/{series}/like', [\App\Http\Controllers\Reader\SeriesActionController::class, 'like'])->name('series.like');
+        Route::post('series/{series}/dislike', [\App\Http\Controllers\Reader\SeriesActionController::class, 'dislike'])->name('series.dislike');
         Route::get('chapters/{chapter}', [ChaptersController::class, 'show'])->name('chapters.show');
         Route::post('chapters/{chapter}/view', [ChapterViewController::class, 'store'])->name('chapters.view');
 
