@@ -21,6 +21,8 @@ Route::middleware(['auth', 'verified', 'role:reader', 'reader.onboarded'])
         Route::post('series/{series}/dislike', [\App\Http\Controllers\Reader\SeriesActionController::class, 'dislike'])->name('series.dislike');
         Route::get('chapters/{chapter}', [ChaptersController::class, 'show'])->name('chapters.show');
         Route::post('chapters/{chapter}/view', [ChapterViewController::class, 'store'])->name('chapters.view');
+        Route::post('chapters/{chapter}/like', [\App\Http\Controllers\Reader\ChapterActionController::class, 'like'])->name('chapters.like');
+        Route::post('chapters/{chapter}/dislike', [\App\Http\Controllers\Reader\ChapterActionController::class, 'dislike'])->name('chapters.dislike');
 
         Route::get('favorites', [ProfileController::class, 'favorites'])->name('favorites');
         Route::get('history', [ProfileController::class, 'history'])->name('history');

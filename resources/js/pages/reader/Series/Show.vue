@@ -12,6 +12,7 @@ interface Chapter {
     number: number;
     status: string;
     published_at?: string | null;
+    preview_url?: string | null;
 }
 
 interface Series {
@@ -34,7 +35,7 @@ interface Series {
         current_page: number;
         last_page: number;
         links: { url: string | null; label: string; active: boolean }[];
-    };
+    } | null;
     is_favorite?: boolean;
     likes_count?: number | null;
     dislikes_count?: number | null;
@@ -108,21 +109,21 @@ const startChapterNumber = computed(() =>
                         </Button>
                         <div class="flex gap-2">
                             <Button
-                            variant="outline"
-                            class="flex-1"
-                            @click.prevent="$inertia.post(`/reader/series/${series.id}/like`)"
-                        >
-                            👍 {{ series.likes_count ?? 0 }}
-                        </Button>
-                        <Button
-                            variant="outline"
-                            class="flex-1"
-                            @click.prevent="$inertia.post(`/reader/series/${series.id}/dislike`)"
-                        >
-                            👎 {{ series.dislikes_count ?? 0 }}
-                        </Button>
+                                variant="outline"
+                                class="flex-1"
+                                @click.prevent="$inertia.post(`/reader/series/${series.id}/like`)"
+                            >
+                                👍 {{ series.likes_count ?? 0 }}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                class="flex-1"
+                                @click.prevent="$inertia.post(`/reader/series/${series.id}/dislike`)"
+                            >
+                                👎 {{ series.dislikes_count ?? 0 }}
+                            </Button>
+                        </div>
                     </div>
-                </div>
                 </div>
             </div>
 

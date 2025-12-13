@@ -12,6 +12,7 @@ use Inertia\Response;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ReaderFavorite;
 use App\Models\ChapterView;
+use Illuminate\Contracts\Pagination\Paginator;
 
 class SeriesController extends Controller
 {
@@ -90,6 +91,10 @@ class SeriesController extends Controller
             ->orderByDesc('number')
             ->paginate(10, ['*'], 'chapters_page', $chapterPage);
 
+        $chaptersCollection = $chaptersPaginator instanceof Paginator
+            ? $chaptersPaginator->getCollection()
+            : (is_iterable($chaptersPaginator) ? collect($chaptersPaginator) : collect());
+
         $lastView = Auth::check()
             ? ChapterView::where('user_id', Auth::id())
                 ->where('series_id', $serie->id)
@@ -118,7 +123,7 @@ class SeriesController extends Controller
                 'name' => $tag->name,
                 'slug' => $tag->slug,
             ]),
-            'chapters' => $chaptersPaginator->getCollection()->map(function ($chapter) use ($media) {
+            'chapters' => $chaptersCollection->map(function ($chapter) use ($media) {
                 $firstPage = $chapter->pages->first();
                 return [
                     'id' => $chapter->id,
@@ -129,11 +134,11 @@ class SeriesController extends Controller
                     'preview_url' => $firstPage ? $media->url($firstPage->path) : null,
                 ];
             })->values(),
-            'chaptersPagination' => [
+            'chaptersPagination' => $chaptersPaginator instanceof Paginator ? [
                 'current_page' => $chaptersPaginator->currentPage(),
                 'last_page' => $chaptersPaginator->lastPage(),
                 'links' => $chaptersPaginator->linkCollection(),
-            ],
+            ] : null,
             'is_favorite' => Auth::check() ? ReaderFavorite::where('user_id', Auth::id())->where('series_id', $serie->id)->exists() : false,
             'likes_count' => $serie->likes_count,
             'dislikes_count' => $serie->dislikes_count,
