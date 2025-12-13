@@ -79,7 +79,15 @@ const startChapterNumber = computed(() =>
                     <div class="flex-1 space-y-2">
                         <h1 class="text-2xl font-semibold leading-tight">{{ series.title }}</h1>
                         <p class="text-sm text-muted-foreground">
-                            {{ series.creator?.name ?? 'Auteur inconnu' }} · {{ series.type }} · {{ series.language.toUpperCase() }}
+                            <Link
+                                v-if="series.creator?.id"
+                                :href="`/reader/creators/${series.creator.id}`"
+                                class="text-primary hover:underline"
+                            >
+                                {{ series.creator?.name ?? 'Auteur inconnu' }}
+                            </Link>
+                            <span v-else>{{ series.creator?.name ?? 'Auteur inconnu' }}</span>
+                            · {{ series.type }} · {{ series.language.toUpperCase() }}
                         </p>
                         <div class="flex flex-wrap gap-2">
                             <Badge variant="secondary">{{ statusLabel(series.status) }}</Badge>

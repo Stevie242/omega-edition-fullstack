@@ -6,6 +6,7 @@ use App\Http\Controllers\Reader\ChapterViewController;
 use App\Http\Controllers\Reader\ProfileController;
 use App\Http\Controllers\Reader\SeriesController;
 use App\Http\Controllers\Reader\SubscriptionController;
+use App\Http\Controllers\Reader\CreatorController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'role:reader', 'reader.onboarded'])
@@ -15,6 +16,7 @@ Route::middleware(['auth', 'verified', 'role:reader', 'reader.onboarded'])
         Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
         Route::resource('series', SeriesController::class)->only(['index', 'show']);
+        Route::get('creators/{creator}', [CreatorController::class, 'show'])->name('creators.show');
         Route::post('series/{series}/favorite', [\App\Http\Controllers\Reader\SeriesActionController::class, 'favorite'])->name('series.favorite');
         Route::delete('series/{series}/favorite', [\App\Http\Controllers\Reader\SeriesActionController::class, 'unfavorite'])->name('series.unfavorite');
         Route::post('series/{series}/like', [\App\Http\Controllers\Reader\SeriesActionController::class, 'like'])->name('series.like');
