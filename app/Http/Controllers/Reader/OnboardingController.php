@@ -32,6 +32,7 @@ class OnboardingController extends Controller
 
         if ($profile) {
             $profile->avatar_url = $this->resolveUrl($profile->avatar_url, $media);
+            $profile->birthdate = optional($profile->birthdate)?->toDateString();
         }
 
         return Inertia::render('reader/Onboarding', [

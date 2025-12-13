@@ -30,7 +30,7 @@ class ReaderProfile extends Model
     ];
 
     protected $casts = [
-        'birthdate' => 'date',
+        'birthdate' => 'date:Y-m-d',
         'preferred_genres' => 'array',
         'preferred_formats' => 'array',
         'preferred_themes' => 'array',

@@ -25,6 +25,7 @@ Route::middleware(['auth', 'verified', 'role:reader', 'reader.onboarded'])
 
         Route::prefix('settings')->as('settings.')->group(function (): void {
             Route::get('profile', [\App\Http\Controllers\Reader\SettingsController::class, 'profile'])->name('profile');
+            Route::match(['put', 'post'], 'profile', [\App\Http\Controllers\Reader\SettingsController::class, 'updateProfile'])->name('profile.update');
             Route::get('appearance', [\App\Http\Controllers\Reader\SettingsController::class, 'appearance'])->name('appearance');
             Route::get('password', [\App\Http\Controllers\Reader\SettingsController::class, 'password'])->name('password');
             Route::get('two-factor', [\App\Http\Controllers\Reader\SettingsController::class, 'twoFactor'])->name('two-factor');
