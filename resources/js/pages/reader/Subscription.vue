@@ -4,7 +4,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import ReaderLayout from '@/layouts/ReaderLayout.vue';
 import { BadgeCheck, ShieldCheck, Wallet, FileText } from 'lucide-vue-next';
-import { Link, useForm } from '@inertiajs/vue3';
+import { Link, useForm, usePage } from '@inertiajs/vue3';
+import { formatFromXaf, type CurrencyCode } from '@/lib/currency';
 
 interface Subscription {
     name: string;
@@ -52,8 +53,9 @@ const selectPlan = (planId: string) => {
     form.post('/reader/subscription/choose');
 };
 
-const formatAmount = (amount: number) =>
-    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'XAF' }).format(amount);
+const page = usePage();
+const currency = ((page.props.preference as any)?.currency as CurrencyCode | undefined) ?? 'XAF';
+const formatAmount = (amount: number) => formatFromXaf(amount, currency, 'fr-FR');
 </script>
 
 <template>

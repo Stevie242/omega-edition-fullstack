@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Reader;
 use App\Http\Controllers\Controller;
 use App\Models\SubscriptionPlan;
 use App\Models\ReaderSubscription;
+use App\Models\Invoice;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -109,6 +110,21 @@ class SubscriptionController extends Controller
                 'meta' => ['selected_plan_id' => $plan->id],
             ],
         );
+
+        // Créer une facture si plan payant.
+        if ($plan->price_xaf > 0) {
+            $invoiceNumber = 'INV-'.Carbon::now()->format('Ymd').'-'.strtoupper(substr($user->id, 0, 6)).'-'.random_int(100, 999);
+            Invoice::create([
+                'user_id' => $user->id,
+                'number' => $invoiceNumber,
+                'period_label' => $plan->period_label,
+                'amount_xaf' => $plan->price_xaf,
+                'status' => 'paid', // ajuster si on doit attendre le paiement
+                'paid_at' => Carbon::now(),
+                'payment_method' => 'manual',
+                'meta' => ['plan_id' => $plan->id],
+            ]);
+        }
 
         return back()->with('success', 'Plan mis à jour.');
     }
