@@ -20,11 +20,13 @@ class PublicCatalogController extends Controller
             'type' => ['nullable', 'in:manga,webtoon'],
             'status' => ['nullable', 'in:ongoing,hiatus,completed'],
             'format' => ['nullable', 'in:oneshot,miniseries,series'],
+            'creator' => ['nullable', 'string', 'max:100'],
         ]);
 
         $query = Series::query()
             ->with(['creator:id,name', 'tags:id,name,slug'])
             ->when($filters['search'] ?? null, fn ($q, $value) => $q->where('title', 'like', '%'.$value.'%'))
+            ->when($filters['creator'] ?? null, fn ($q, $value) => $q->whereHas('creator', fn ($c) => $c->where('name', 'like', '%'.$value.'%')))
             ->when($filters['type'] ?? null, fn ($q, $value) => $q->where('type', $value))
             ->when($filters['status'] ?? null, fn ($q, $value) => $q->where('status', $value))
             ->when($filters['format'] ?? null, fn ($q, $value) => $q->where('format', $value));

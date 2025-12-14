@@ -2,8 +2,11 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import PublicLayout from '@/layouts/PublicLayout.vue';
-import { Link } from '@inertiajs/vue3';
+import { Link, router } from '@inertiajs/vue3';
+import { reactive } from 'vue';
 
 interface SeriesItem {
     id: string;
@@ -37,6 +40,37 @@ const statusLabel = (status: string) => {
     if (status === 'completed') return 'Terminé';
     return status;
 };
+
+const form = reactive({
+    search: props.filters.search ?? '',
+    creator: props.filters.creator ?? '',
+    type: props.filters.type ?? '',
+    status: props.filters.status ?? '',
+    format: props.filters.format ?? '',
+});
+
+const applyFilters = () => {
+    router.get(
+        '/catalog',
+        {
+            search: form.search || null,
+            creator: form.creator || null,
+            type: form.type || null,
+            status: form.status || null,
+            format: form.format || null,
+        },
+        { preserveScroll: true, preserveState: true },
+    );
+};
+
+const resetFilters = () => {
+    form.search = '';
+    form.creator = '';
+    form.type = '';
+    form.status = '';
+    form.format = '';
+    applyFilters();
+};
 </script>
 
 <template>
@@ -50,11 +84,52 @@ const statusLabel = (status: string) => {
                     <CardTitle>Filtres</CardTitle>
                     <CardDescription>Ajustez votre recherche.</CardDescription>
                 </CardHeader>
-                <CardContent class="space-y-3 text-sm text-muted-foreground">
-                    <div>Recherche en cours… (entrée dans l’URL).</div>
-                    <div>Types : {{ filterOptions.types.join(', ') }}</div>
-                    <div>Formats : {{ filterOptions.formats.join(', ') }}</div>
-                    <div>Statuts : {{ filterOptions.statuses.join(', ') }}</div>
+                <CardContent class="space-y-4 text-sm text-muted-foreground">
+                    <div class="space-y-2">
+                        <Label for="search">Recherche</Label>
+                        <Input
+                            id="search"
+                            v-model="form.search"
+                            type="text"
+                            placeholder="Titre de série..."
+                            @keyup.enter="applyFilters"
+                        />
+                    </div>
+                    <div class="space-y-2">
+                        <Label for="creator">Créateur</Label>
+                        <Input
+                            id="creator"
+                            v-model="form.creator"
+                            type="text"
+                            placeholder="Nom du créateur"
+                            @keyup.enter="applyFilters"
+                        />
+                    </div>
+                    <div class="space-y-2">
+                        <Label>Type</Label>
+                        <select v-model="form.type" class="w-full rounded-md border bg-background px-3 py-2 text-sm" @change="applyFilters">
+                            <option value="">Tous</option>
+                            <option v-for="t in filterOptions.types" :key="t" :value="t">{{ t }}</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <Label>Status</Label>
+                        <select v-model="form.status" class="w-full rounded-md border bg-background px-3 py-2 text-sm" @change="applyFilters">
+                            <option value="">Tous</option>
+                            <option v-for="s in filterOptions.statuses" :key="s" :value="s">{{ statusLabel(s) }}</option>
+                        </select>
+                    </div>
+                    <div class="space-y-2">
+                        <Label>Format</Label>
+                        <select v-model="form.format" class="w-full rounded-md border bg-background px-3 py-2 text-sm" @change="applyFilters">
+                            <option value="">Tous</option>
+                            <option v-for="f in filterOptions.formats" :key="f" :value="f">{{ f }}</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-2 pt-2">
+                        <Button class="flex-1" @click="applyFilters">Filtrer</Button>
+                        <Button variant="outline" @click="resetFilters">Réinitialiser</Button>
+                    </div>
                 </CardContent>
             </Card>
 
@@ -64,9 +139,6 @@ const statusLabel = (status: string) => {
                         <h2 class="text-lg font-semibold">Séries</h2>
                         <p class="text-sm text-muted-foreground">Cliquez pour voir le chapitre gratuit.</p>
                     </div>
-                    <Button as-child>
-                        <Link href="/register/reader">Créer un compte lecteur</Link>
-                    </Button>
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     <Card v-for="item in series.data" :key="item.id" class="overflow-hidden">
