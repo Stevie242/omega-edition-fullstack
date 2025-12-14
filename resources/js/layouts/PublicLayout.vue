@@ -34,10 +34,10 @@ const toggleTheme = () => {
                 <div class="flex items-center gap-2">
                     <Link href="/" class="flex items-center gap-2">
                         <AppLogo />
-                        <span class="text-sm font-semibold uppercase tracking-[0.08em]">Omega Edition</span>
                     </Link>
                 </div>
                 <nav class="flex items-center gap-3 text-sm">
+                    <Link href="/" class="rounded-full px-3 py-1 hover:bg-muted">Accueil</Link>
                     <Link href="/catalog" class="rounded-full px-3 py-1 hover:bg-muted">Catalogue</Link>
                     <Link href="/about" class="rounded-full px-3 py-1 hover:bg-muted">À propos</Link>
                     <Button variant="ghost" size="icon" class="rounded-full" @click="toggleTheme" :title="appearance === 'dark' ? 'Passer en clair' : 'Passer en sombre'">
