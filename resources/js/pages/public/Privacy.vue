@@ -5,7 +5,7 @@ import PublicLayout from '@/layouts/PublicLayout.vue';
 <template>
     <PublicLayout
         title="Politique de confidentialite"
-        description="Synthese claire des donnees collecteies, de leur usage et de vos droits sur Omega Edition."
+        description="Synthese claire des donnees collectees, de leur usage et de vos droits sur Omega Edition."
     >
         <div class="space-y-6">
             <div class="grid gap-4 sm:grid-cols-2">

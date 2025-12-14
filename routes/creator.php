@@ -6,6 +6,7 @@ use App\Http\Controllers\Creator\DashboardController;
 use App\Http\Controllers\Creator\PayoutsController;
 use App\Http\Controllers\Creator\TaxProfileController;
 use App\Http\Controllers\Creator\SeriesController;
+use App\Http\Controllers\Creator\SupportController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'role:creator', 'creator.onboarded'])
@@ -23,6 +24,8 @@ Route::middleware(['auth', 'verified', 'role:creator', 'creator.onboarded'])
         Route::get('analytics', [AnalyticsController::class, 'index'])->name('analytics');
         Route::get('payouts', [PayoutsController::class, 'index'])->name('payouts');
         Route::put('payouts/tax-profile', [TaxProfileController::class, 'update'])->name('payouts.tax-profile');
+        Route::get('support', [SupportController::class, 'index'])->name('support');
+        Route::post('support', [SupportController::class, 'store'])->name('support.store');
 
         Route::prefix('settings')->as('settings.')->group(function (): void {
             Route::get('profile', [\App\Http\Controllers\Creator\SettingsController::class, 'profile'])->name('profile');

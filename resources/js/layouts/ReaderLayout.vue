@@ -17,7 +17,7 @@ import {
 import { urlIsActive } from '@/lib/utils';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Heart, History, LayoutGrid, Sparkles, User, BadgeCheck } from 'lucide-vue-next';
+import { Heart, History, LayoutGrid, Sparkles, User, BadgeCheck, LifeBuoy } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 
 interface Breadcrumb {
@@ -45,6 +45,7 @@ const mainNavItems: NavItem[] = [
     { title: 'Favoris', href: '/reader/favorites', icon: Heart },
     { title: 'Historique', href: '/reader/history', icon: History },
     { title: 'Abonnement', href: '/reader/subscription', icon: BadgeCheck },
+    { title: 'Support', href: '/reader/support', icon: LifeBuoy },
 ];
 
 const profileNavItems: NavItem[] = [

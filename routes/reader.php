@@ -7,6 +7,7 @@ use App\Http\Controllers\Reader\ProfileController;
 use App\Http\Controllers\Reader\SeriesController;
 use App\Http\Controllers\Reader\SubscriptionController;
 use App\Http\Controllers\Reader\CreatorController;
+use App\Http\Controllers\Reader\SupportController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'role:reader', 'reader.onboarded'])
@@ -31,6 +32,8 @@ Route::middleware(['auth', 'verified', 'role:reader', 'reader.onboarded'])
 
         Route::get('subscription', [SubscriptionController::class, 'index'])->name('subscription');
         Route::post('subscription/choose', [SubscriptionController::class, 'choose'])->name('subscription.choose');
+        Route::get('support', [SupportController::class, 'index'])->name('support');
+        Route::post('support', [SupportController::class, 'store'])->name('support.store');
 
         Route::prefix('settings')->as('settings.')->group(function (): void {
             Route::get('profile', [\App\Http\Controllers\Reader\SettingsController::class, 'profile'])->name('profile');

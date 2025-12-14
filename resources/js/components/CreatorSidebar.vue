@@ -13,7 +13,7 @@ import {
 import { urlIsActive } from '@/lib/utils';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BarChart3, LayoutGrid, LibraryBig, Wallet } from 'lucide-vue-next';
+import { BarChart3, LayoutGrid, LibraryBig, LifeBuoy, Wallet } from 'lucide-vue-next';
 import AppLogo from './AppLogo.vue';
 import CreatorNavUser from './CreatorNavUser.vue';
 
@@ -21,9 +21,10 @@ const page = usePage();
 
 const items: NavItem[] = [
     { title: 'Dashboard', href: '/creator', icon: LayoutGrid },
-    { title: 'Séries', href: '/creator/series', icon: LibraryBig },
+    { title: 'Series', href: '/creator/series', icon: LibraryBig },
     { title: 'Analytics', href: '/creator/analytics', icon: BarChart3 },
     { title: 'Payouts', href: '/creator/payouts', icon: Wallet },
+    { title: 'Support', href: '/creator/support', icon: LifeBuoy },
 ];
 </script>
 
@@ -43,7 +44,7 @@ const items: NavItem[] = [
 
         <SidebarContent>
             <SidebarGroup class="px-2 py-0">
-                <SidebarGroupLabel>Créateur</SidebarGroupLabel>
+                <SidebarGroupLabel>Createur</SidebarGroupLabel>
                 <SidebarMenu>
                     <SidebarMenuItem v-for="item in items" :key="item.title">
                         <SidebarMenuButton
@@ -59,11 +60,11 @@ const items: NavItem[] = [
                     </SidebarMenuItem>
                 </SidebarMenu>
             </SidebarGroup>
-    </SidebarContent>
+        </SidebarContent>
 
-    <SidebarFooter>
-        <CreatorNavUser />
-    </SidebarFooter>
-</Sidebar>
-<slot />
+        <SidebarFooter>
+            <CreatorNavUser />
+        </SidebarFooter>
+    </Sidebar>
+    <slot />
 </template>
