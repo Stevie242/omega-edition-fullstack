@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ModerationController;
 use App\Http\Controllers\Admin\MonitoringController;
 use App\Http\Controllers\Admin\UsersController;
+use App\Http\Controllers\Admin\SupportTicketsController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])
@@ -21,6 +22,8 @@ Route::middleware(['auth', 'verified'])
 
         Route::get('moderation', [ModerationController::class, 'index'])->name('moderation');
         Route::get('monitoring', [MonitoringController::class, 'index'])->name('monitoring');
+        Route::get('support', [SupportTicketsController::class, 'index'])->name('support.index');
+        Route::put('support/{ticket}', [SupportTicketsController::class, 'update'])->name('support.update');
 
         Route::prefix('settings')->as('settings.')->group(function (): void {
             Route::get('profile', [\App\Http\Controllers\Admin\SettingsController::class, 'profile'])->name('profile');

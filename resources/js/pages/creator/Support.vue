@@ -21,7 +21,7 @@ const items = [
     {
         title: 'Centre d aide',
         description: 'Guides rapides : publier un chapitre, gerer les payoffs, configurer les taxes.',
-        href: '#',
+        href: '/creator/faq',
         actionLabel: 'Ouvrir les guides',
         badge: 'Docs',
     },

@@ -21,7 +21,7 @@ const items = [
     {
         title: 'FAQ lecteur',
         description: 'Acces aux series, gestion des favoris et historique, tips de lecture.',
-        href: '#',
+        href: '/reader/faq',
         actionLabel: 'Voir la FAQ',
         badge: 'Docs',
     },

@@ -17,7 +17,7 @@ import {
 import { urlIsActive } from '@/lib/utils';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { Activity, LayoutGrid, Shield, Users, Zap } from 'lucide-vue-next';
+import { Activity, LayoutGrid, Shield, Users, Zap, LifeBuoy } from 'lucide-vue-next';
 import AppLogo from '@/components/AppLogo.vue';
 
 interface Breadcrumb {
@@ -43,9 +43,10 @@ const mainNavItems: NavItem[] = [
     { title: 'Dashboard', href: '/admin', icon: LayoutGrid },
     { title: 'Catalogue', href: '/admin/catalog', icon: Activity },
     { title: 'Utilisateurs', href: '/admin/users', icon: Users },
-    { title: 'Créateurs', href: '/admin/creators', icon: Shield },
-    { title: 'Modération', href: '/admin/moderation', icon: Zap },
+    { title: 'Createurs', href: '/admin/creators', icon: Shield },
+    { title: 'Moderation', href: '/admin/moderation', icon: Zap },
     { title: 'Monitoring', href: '/admin/monitoring', icon: Activity },
+    { title: 'Support', href: '/admin/support', icon: LifeBuoy },
 ];
 </script>
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Creator\PayoutsController;
 use App\Http\Controllers\Creator\TaxProfileController;
 use App\Http\Controllers\Creator\SeriesController;
 use App\Http\Controllers\Creator\SupportController;
+use Inertia\Inertia;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified', 'role:creator', 'creator.onboarded'])
@@ -26,6 +27,7 @@ Route::middleware(['auth', 'verified', 'role:creator', 'creator.onboarded'])
         Route::put('payouts/tax-profile', [TaxProfileController::class, 'update'])->name('payouts.tax-profile');
         Route::get('support', [SupportController::class, 'index'])->name('support');
         Route::post('support', [SupportController::class, 'store'])->name('support.store');
+        Route::get('faq', fn () => Inertia::render('creator/Faq'))->name('faq');
 
         Route::prefix('settings')->as('settings.')->group(function (): void {
             Route::get('profile', [\App\Http\Controllers\Creator\SettingsController::class, 'profile'])->name('profile');

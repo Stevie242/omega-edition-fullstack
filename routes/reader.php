@@ -9,6 +9,7 @@ use App\Http\Controllers\Reader\SubscriptionController;
 use App\Http\Controllers\Reader\CreatorController;
 use App\Http\Controllers\Reader\SupportController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 Route::middleware(['auth', 'verified', 'role:reader', 'reader.onboarded'])
     ->prefix('reader')
@@ -34,6 +35,7 @@ Route::middleware(['auth', 'verified', 'role:reader', 'reader.onboarded'])
         Route::post('subscription/choose', [SubscriptionController::class, 'choose'])->name('subscription.choose');
         Route::get('support', [SupportController::class, 'index'])->name('support');
         Route::post('support', [SupportController::class, 'store'])->name('support.store');
+        Route::get('faq', fn () => Inertia::render('reader/Faq'))->name('faq');
 
         Route::prefix('settings')->as('settings.')->group(function (): void {
             Route::get('profile', [\App\Http\Controllers\Reader\SettingsController::class, 'profile'])->name('profile');
