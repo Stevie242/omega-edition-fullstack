@@ -78,17 +78,24 @@ const startChapterNumber = computed(() =>
                     </div>
                     <div class="flex-1 space-y-2">
                         <h1 class="text-2xl font-semibold leading-tight">{{ series.title }}</h1>
-                        <p class="text-sm text-muted-foreground">
-                            <Link
+                        <div class="flex flex-col gap-2 text-sm text-muted-foreground">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-muted-foreground/80">Créateur</span>
+                                <span class="font-semibold text-foreground">{{ series.creator?.name ?? 'Auteur inconnu' }}</span>
+                                <span class="text-muted-foreground/50">· {{ series.type }} · {{ series.language.toUpperCase() }}</span>
+                            </div>
+                            <Button
                                 v-if="series.creator?.id"
-                                :href="`/reader/creators/${series.creator.id}`"
-                                class="text-primary hover:underline"
+                                variant="secondary"
+                                size="sm"
+                                as-child
+                                class="w-full sm:w-auto justify-center rounded-full px-4 text-sm font-semibold"
                             >
-                                {{ series.creator?.name ?? 'Auteur inconnu' }}
-                            </Link>
-                            <span v-else>{{ series.creator?.name ?? 'Auteur inconnu' }}</span>
-                            · {{ series.type }} · {{ series.language.toUpperCase() }}
-                        </p>
+                                <Link :href="`/reader/creators/${series.creator.id}`">
+                                    Voir le profil créateur
+                                </Link>
+                            </Button>
+                        </div>
                         <div class="flex flex-wrap gap-2">
                             <Badge variant="secondary">{{ statusLabel(series.status) }}</Badge>
                             <Badge variant="outline">{{ series.format }}</Badge>
