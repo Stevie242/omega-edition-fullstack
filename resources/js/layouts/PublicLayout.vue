@@ -35,7 +35,8 @@ const navLinks = [
 
 <template>
     <div class="flex min-h-screen flex-col bg-background text-foreground">
-        <header class="sticky top-0 z-30 border-b bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+        <!-- HEADER -->
+        <header class="sticky top-0 z-30 border-b bg-background/80 shadow-[0_10px_50px_rgba(0,0,0,0.08)] backdrop-blur supports-[backdrop-filter]:bg-background/70">
             <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 sm:px-6">
                 <Link href="/" class="flex items-center gap-2">
                     <AppLogo />
@@ -113,7 +114,7 @@ const navLinks = [
         </header>
 
         <main class="mx-auto max-w-6xl flex-1 px-4 py-10 sm:px-6 sm:py-14">
-            <div v-if="!minimal" class="mb-8 space-y-2">
+            <div v-if="!minimal" class="mb-10 space-y-2">
                 <p class="text-xs uppercase tracking-[0.14em] text-primary/70">Omega Edition</p>
                 <h1 class="text-3xl font-bold tracking-tight sm:text-4xl">{{ title }}</h1>
                 <p class="max-w-3xl text-sm text-muted-foreground">{{ description }}</p>
@@ -121,18 +122,26 @@ const navLinks = [
             <slot />
         </main>
 
-        <footer class="border-t bg-muted/30">
-            <div class="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6 sm:flex-row sm:items-start sm:justify-between">
-                <div class="space-y-2">
-                    <div class="flex items-center gap-2">
+        <!-- FUTURISTIC FOOTER -->
+        <footer class="relative mt-8 border-t bg-gradient-to-b from-background via-background to-background/60">
+            <div class="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top,rgba(99,102,241,0.18),transparent_45%)] blur-2xl"></div>
+            <div class="mx-auto flex max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
                         <AppLogo />
                         <span class="text-sm font-semibold uppercase tracking-[0.08em]">Omega Edition</span>
                     </div>
-                    <p class="text-sm text-muted-foreground max-w-sm">
+                    <p class="max-w-sm text-sm text-muted-foreground">
                         Plateforme futuriste pour lecteurs et créateurs : lecture légale, publication, analytics, soutien aux auteurs.
                     </p>
+                    <div class="flex flex-wrap gap-2 text-xs text-muted-foreground/80">
+                        <span class="rounded-full border border-primary/30 bg-primary/10 px-3 py-1">1er chapitre gratuit</span>
+                        <span class="rounded-full border border-secondary/30 bg-secondary/10 px-3 py-1">Créateurs rémunérés</span>
+                        <span class="rounded-full border border-foreground/10 px-3 py-1">Sans pub intrusive</span>
+                    </div>
                 </div>
-                <div class="grid grid-cols-2 gap-6 text-sm text-muted-foreground sm:grid-cols-3">
+
+                <div class="grid flex-1 grid-cols-2 gap-6 text-sm text-muted-foreground sm:grid-cols-3">
                     <div class="space-y-2">
                         <div class="text-foreground font-semibold">Navigation</div>
                         <div class="flex flex-col gap-1">
@@ -154,6 +163,9 @@ const navLinks = [
                         <div class="flex flex-col gap-1">
                             <Link href="/privacy" class="hover:text-primary">Confidentialité</Link>
                             <Link href="/terms" class="hover:text-primary">Conditions</Link>
+                        </div>
+                        <div class="mt-3 rounded-lg border border-primary/20 bg-primary/10 p-3 text-xs text-primary">
+                            Base prix : XAF · Conversion automatique selon devise.
                         </div>
                     </div>
                 </div>
